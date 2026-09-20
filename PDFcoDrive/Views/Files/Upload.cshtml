@@ -1,0 +1,355 @@
+﻿@{
+    ViewData["Title"] = "آپلود فایل";
+    var categories = ViewBag.Categories as List<PDFcoDrive.Models.Category> ?? new();
+    var usersJson = ViewBag.UsersJson as string ?? "[]";
+    int? selectedFolderId = ViewBag.SelectedFolderId as int?;
+}
+
+<div class="page-header">
+    <h1>آپلود فایل</h1>
+    <p>فایل‌های خود را با Drag & Drop آپلود کنید</p>
+</div>
+
+<div id="alertBox"></div>
+
+<!-- ============================================
+     Upload Zone
+     ============================================ -->
+<div class="card-modern mb-4">
+    <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon-main">
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+        </div>
+        <div class="upload-zone-text">
+            <h4>فایل‌ها را اینجا بکشید و رها کنید</h4>
+            <p>یا برای انتخاب کلیک کنید — حداکثر حجم هر فایل 100MB</p>
+        </div>
+        <button type="button" class="upload-browse-btn" id="browseBtn">
+            <i class="bi bi-folder2-open"></i>
+            انتخاب فایل‌ها
+        </button>
+        <input type="file" id="fileInput" multiple style="display: none;" />
+    </div>
+
+    <div class="selected-files" id="selectedFiles"></div>
+</div>
+
+<!-- ============================================
+     اطلاعات فایل
+     ============================================ -->
+<div class="card-modern">
+    <div class="section-header">
+        <h3><i class="bi bi-info-circle-fill"></i> اطلاعات فایل</h3>
+    </div>
+
+    <div class="row g-3">
+        <!-- کاربر مقصد -->
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label-modern">
+                <i class="bi bi-person"></i> کاربر مقصد
+            </label>
+            <select id="userSelect" class="form-control-modern">
+                <option value="">— انتخاب کاربر —</option>
+            </select>
+            <small class="field-hint">فایل برای کی ذخیره بشه؟</small>
+        </div>
+
+        <!-- پوشه -->
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label-modern">
+                <i class="bi bi-folder"></i> پوشه
+            </label>
+            <select id="folderId" class="form-control-modern" disabled>
+                <option value="">— اول کاربر —</option>
+            </select>
+            <small class="field-hint" id="folderHint">ابتدا کاربر رو انتخاب کن</small>
+        </div>
+
+        <!-- دسته‌بندی -->
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label-modern">
+                <i class="bi bi-tags"></i> دسته‌بندی
+            </label>
+            <select id="categoryId" class="form-control-modern">
+                <option value="">— بدون دسته‌بندی —</option>
+                @foreach (var cat in categories)
+                {
+                    <option value="@cat.Id">@cat.Name</option>
+                }
+            </select>
+            <small class="field-hint">اختیاری</small>
+        </div>
+
+        <!-- توضیحات -->
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label-modern">
+                <i class="bi bi-text-paragraph"></i> توضیحات
+            </label>
+            <input type="text" id="description" class="form-control-modern" placeholder="توضیح کوتاه..." maxlength="500" />
+            <small class="field-hint">اختیاری</small>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="button" class="btn-modern btn-modern-primary" id="submitBtn" disabled>
+            <i class="bi bi-cloud-upload-fill"></i>
+            آپلود فایل‌ها
+        </button>
+        <a asp-controller="Home" asp-action="Index" class="btn-modern btn-modern-outline">
+            <i class="bi bi-x-lg"></i> انصراف
+        </a>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        // ============================================
+        // داده‌های کاربران (از سرور)
+        // ============================================
+        const usersData = @Html.Raw(usersJson);
+
+        (function () {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            const selectedFiles = document.getElementById('selectedFiles');
+            const submitBtn = document.getElementById('submitBtn');
+            const browseBtn = document.getElementById('browseBtn');
+            const alertBox = document.getElementById('alertBox');
+            const userSelect = document.getElementById('userSelect');
+            const folderSelect = document.getElementById('folderId');
+            const folderHint = document.getElementById('folderHint');
+
+            let allFiles = [];
+
+            // ============================================
+            // پر کردن Dropdown کاربران
+            // ============================================
+            usersData.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.userId;
+
+                let label = u.userName;
+                if (u.isMe) {
+                    label = '👤 ' + u.userName + ' (خودم)';
+                } else if (u.userRole === 'Admin') {
+                    label = '🛡️ ' + u.userName + ' (مدیر)';
+                } else if (u.userRole === 'Board') {
+                    label = '⭐ ' + u.userName + ' (هیئت مدیره)';
+                } else {
+                    label = '👥 ' + u.userName;
+                }
+
+                opt.textContent = label;
+                userSelect.appendChild(opt);
+            });
+
+            // ============================================
+            // انتخاب کاربر → نمایش پوشه‌ها
+            // ============================================
+            userSelect.addEventListener('change', function () {
+                const userId = this.value;
+                folderSelect.innerHTML = '<option value="">— ریشه (بدون پوشه) —</option>';
+
+                if (!userId) {
+                    folderSelect.disabled = true;
+                    folderHint.textContent = 'ابتدا کاربر رو انتخاب کن';
+                    return;
+                }
+
+                const user = usersData.find(u => u.userId === userId);
+                if (!user) {
+                    folderSelect.disabled = true;
+                    return;
+                }
+
+                if (!user.folders || user.folders.length === 0) {
+                    folderSelect.disabled = false;
+                    folderHint.textContent = 'این کاربر پوشه قابل دسترس نداره';
+                    return;
+                }
+
+                folderHint.textContent = user.folders.length + ' پوشه قابل دسترس';
+
+                user.folders.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.id;
+
+                    let prefix = '';
+                    if (f.level && f.level > 0) {
+                        prefix = '└─'.repeat(f.level) + ' ';
+                    }
+
+                    opt.textContent = prefix + f.path + ' (' + f.accessName + ')';
+                    folderSelect.appendChild(opt);
+                });
+
+                folderSelect.disabled = false;
+            });
+
+            // ============================================
+            // Drag & Drop
+            // ============================================
+            ['dragenter', 'dragover'].forEach(evt => {
+                uploadZone.addEventListener(evt, (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    uploadZone.classList.add('dragover');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(evt => {
+                uploadZone.addEventListener(evt, (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    uploadZone.classList.remove('dragover');
+                });
+            });
+
+            uploadZone.addEventListener('drop', (e) => addFiles(Array.from(e.dataTransfer.files)));
+
+            uploadZone.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') fileInput.click();
+            });
+
+            browseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                addFiles(Array.from(e.target.files));
+                fileInput.value = '';
+            });
+
+            function addFiles(newFiles) {
+                newFiles.forEach(f => {
+                    if (!allFiles.some(x => x.name === f.name && x.size === f.size))
+                        allFiles.push(f);
+                });
+                renderFiles();
+            }
+
+            function renderFiles() {
+                selectedFiles.innerHTML = '';
+                if (allFiles.length === 0) {
+                    submitBtn.disabled = true;
+                    return;
+                }
+
+                allFiles.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'selected-file-item';
+                    item.innerHTML = `
+                        <div class="file-icon"><i class="bi ${getFileIcon(file.name)}"></i></div>
+                        <div class="file-info">
+                            <div class="file-name">${escapeHtml(file.name)}</div>
+                            <div class="file-size">${formatSize(file.size)}</div>
+                        </div>
+                        <button type="button" class="file-remove" data-index="${index}">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    `;
+                    selectedFiles.appendChild(item);
+                });
+
+                selectedFiles.querySelectorAll('.file-remove').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        allFiles.splice(parseInt(btn.dataset.index), 1);
+                        renderFiles();
+                    });
+                });
+
+                submitBtn.disabled = false;
+            }
+
+            // ============================================
+            // Submit (fetch)
+            // ============================================
+            submitBtn.addEventListener('click', async function () {
+                if (allFiles.length === 0) {
+                    showAlert('هیچ فایلی انتخاب نشده', 'error');
+                    return;
+                }
+
+                const categoryId = document.getElementById('categoryId').value;
+                const folderId = folderSelect.value;
+                const description = document.getElementById('description').value;
+
+                const formData = new FormData();
+                if (categoryId) formData.append('categoryId', categoryId);
+                if (folderId) formData.append('folderId', folderId);
+                if (description) formData.append('description', description);
+
+                allFiles.forEach(f => formData.append('files', f, f.name));
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (token) formData.append('__RequestVerificationToken', token);
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> در حال آپلود...';
+
+                try {
+                    const response = await fetch('/Files/Upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok || response.redirected) {
+                        showAlert('فایل‌ها با موفقیت آپلود شدند!', 'success');
+                        setTimeout(() => {
+                            if (folderId) {
+                                window.location.href = '/Folders/Browse/' + folderId;
+                            } else {
+                                window.location.href = '/';
+                            }
+                        }, 1000);
+                    } else {
+                        showAlert('خطا در آپلود: ' + response.status, 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> آپلود فایل‌ها';
+                    }
+                } catch (err) {
+                    showAlert('خطای شبکه: ' + err.message, 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> آپلود فایل‌ها';
+                }
+            });
+
+            // ============================================
+            // Helper Functions
+            // ============================================
+            function showAlert(message, type) {
+                const cls = type === 'error' ? 'error' : 'success';
+                const icon = type === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
+                alertBox.innerHTML = `<div class="alert-modern ${cls}"><i class="bi ${icon}"></i><span>${message}</span></div>`;
+            }
+
+            function getFileIcon(filename) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const icons = {
+                    pdf: 'bi-file-pdf', doc: 'bi-file-word', docx: 'bi-file-word',
+                    xls: 'bi-file-excel', xlsx: 'bi-file-excel',
+                    zip: 'bi-file-zip', rar: 'bi-file-zip',
+                    jpg: 'bi-file-image', jpeg: 'bi-file-image', png: 'bi-file-image',
+                    mp4: 'bi-file-play', mp3: 'bi-file-music', txt: 'bi-file-text'
+                };
+                return icons[ext] || 'bi-file-earmark';
+            }
+
+            function formatSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        })();
+    </script>
+}

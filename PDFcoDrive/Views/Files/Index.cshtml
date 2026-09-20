@@ -1,0 +1,186 @@
+﻿@model List<PDFcoDrive.Models.FileItem>
+@{
+    ViewData["Title"] = "فایل‌های من";
+    var categories = ViewBag.Categories as List<PDFcoDrive.Models.Category> ?? new();
+    var myFolders = ViewBag.MyFolders as List<PDFcoDrive.Models.Folder> ?? new();
+    var folderFileCounts = ViewBag.FolderFileCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+    int? selectedCategory = ViewBag.SelectedCategory as int?;
+    string? search = ViewBag.Search as string;
+    string? sort = ViewBag.Sort as string;
+}
+
+<div class="page-header">
+    <h1>فایل‌های من</h1>
+    <p>مدیریت پوشه‌ها و فایل‌های شما</p>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-modern success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-modern error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<div class="page-actions">
+    <a asp-controller="Folders" asp-action="Create" asp-route-returnUrl="/Files" class="btn-modern btn-modern-outline">
+        <i class="bi bi-folder-plus"></i>
+        پوشه جدید
+    </a>
+    <a asp-action="Upload" class="btn-modern btn-modern-primary">
+        <i class="bi bi-cloud-upload-fill"></i>
+        آپلود فایل جدید
+    </a>
+</div>
+
+<h3 class="section-title">
+    <i class="bi bi-folder-fill"></i>
+    پوشه‌های من (@myFolders.Count)
+</h3>
+
+@if (!myFolders.Any())
+{
+    <div class="card-modern mb-4">
+        <div class="empty-state-modern" style="padding: 30px 20px;">
+            <div class="empty-icon" style="width: 60px; height: 60px; font-size: 26px;">
+                <i class="bi bi-folder"></i>
+            </div>
+            <h4 style="font-size: 14px;">هنوز پوشه‌ای نساختی</h4>
+            <p style="font-size: 12px;">با دکمه «پوشه جدید» اولین پوشه‌ت رو بساز</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="folders-grid mb-4">
+        @foreach (var folder in myFolders)
+        {
+            var fileCount = folderFileCounts.ContainsKey(folder.Id) ? folderFileCounts[folder.Id] : 0;
+
+            <div class="folder-card-wrapper">
+                <a asp-controller="Folders" asp-action="Browse" asp-route-id="@folder.Id" asp-route-returnUrl="/Files"
+                   class="folder-card" style="text-decoration: none; color: inherit;">
+                    <div class="folder-card-icon" style="background: @folder.Color;">
+                        <i class="bi @folder.Icon"></i>
+                    </div>
+                    <div class="folder-card-body">
+                        <h4>@folder.Name</h4>
+                        @if (!string.IsNullOrEmpty(folder.Description))
+                        {
+                            <p>@folder.Description</p>
+                        }
+                        <div class="folder-card-meta">
+                            <span><i class="bi bi-files"></i> @fileCount فایل</span>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-left folder-card-arrow"></i>
+                </a>
+
+                <div class="folder-card-actions">
+                    <a asp-controller="Folders" asp-action="Edit" asp-route-id="@folder.Id" asp-route-returnUrl="/Files"
+                       class="folder-action-btn edit" title="ویرایش">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form asp-controller="Folders" asp-action="Delete" asp-route-id="@folder.Id" asp-route-returnUrl="/Files"
+                          method="post" style="display: inline; margin: 0;"
+                          onsubmit="return confirm('حذف شود؟');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="folder-action-btn delete" title="حذف">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<h3 class="section-title">
+    <i class="bi bi-file-earmark-fill"></i>
+    فایل‌ها (@Model.Count)
+</h3>
+
+@if (!Model.Any())
+{
+    <div class="card-modern">
+        <div class="empty-state-modern">
+            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+            <h4>هیچ فایلی یافت نشد</h4>
+            <p>اولین فایل خود را آپلود کن!</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="files-grid">
+        @foreach (var file in Model)
+        {
+            <div class="file-card">
+                <div class="file-card-icon">
+                    <i class="bi @GetFileIcon(file.Extension)"></i>
+                </div>
+                <div class="file-card-body">
+                    <h4>@file.DisplayName</h4>
+                    <div class="file-card-meta">
+                        <span><i class="bi bi-hdd"></i> @FormatSize(file.SizeBytes)</span>
+                        <span><i class="bi bi-download"></i> @file.DownloadCount</span>
+                    </div>
+                </div>
+                <div class="file-card-actions">
+                    <a asp-action="Download" asp-route-id="@file.Id" class="btn-action download" title="دانلود">
+                        <i class="bi bi-download"></i>
+                    </a>
+                    <a asp-action="Details" asp-route-id="@file.Id" class="btn-action" title="جزئیات">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a asp-controller="Folders" asp-action="SaveToMyFolder" asp-route-fileId="@file.Id"
+                       class="btn-action" title="انتقال به پوشه"
+                       style="color: #fbbf24 !important; background: rgba(251, 191, 36, 0.15) !important; border-color: rgba(251, 191, 36, 0.4) !important;">
+                        <i class="bi bi-folder-symlink"></i>
+                    </a>
+                    <a asp-controller="Folders" asp-action="ShareFile" asp-route-fileId="@file.Id"
+                       class="btn-action" title="اشتراک‌گذاری"
+                       style="color: #10b981 !important; background: rgba(16, 185, 129, 0.15) !important; border-color: rgba(16, 185, 129, 0.4) !important;">
+                        <i class="bi bi-share-fill"></i>
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    string GetFileIcon(string ext)
+    {
+        return ext.ToLower() switch
+        {
+            ".pdf" => "bi-file-pdf-fill",
+            ".doc" or ".docx" => "bi-file-word-fill",
+            ".xls" or ".xlsx" => "bi-file-excel-fill",
+            ".ppt" or ".pptx" => "bi-file-ppt-fill",
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => "bi-file-image-fill",
+            ".zip" or ".rar" or ".7z" => "bi-file-zip-fill",
+            ".mp4" or ".mkv" or ".avi" => "bi-file-play-fill",
+            ".mp3" or ".wav" => "bi-file-music-fill",
+            ".txt" or ".md" => "bi-file-text-fill",
+            _ => "bi-file-earmark-fill"
+        };
+    }
+}

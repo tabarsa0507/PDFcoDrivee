@@ -1,0 +1,91 @@
+﻿@model PDFcoDrive.Models.Category
+@{
+    ViewData["Title"] = "دسته‌بندی جدید";
+}
+
+<div class="page-header">
+    <h1>دسته‌بندی جدید</h1>
+    <p>یک دسته‌بندی جدید بسازید</p>
+</div>
+
+<div class="form-card">
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="form-group">
+            <label asp-for="Name" class="form-label-modern">
+                <i class="bi bi-tag"></i> نام دسته‌بندی
+            </label>
+            <input asp-for="Name" class="form-control-modern" placeholder="مثلاً: اسناد PDF" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description" class="form-label-modern">
+                <i class="bi bi-text-paragraph"></i> توضیحات (اختیاری)
+            </label>
+            <textarea asp-for="Description" class="form-control-modern" rows="3"></textarea>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Icon" class="form-label-modern">
+                        <i class="bi bi-emoji-smile"></i> آیکون
+                    </label>
+                    <select asp-for="Icon" class="form-control-modern">
+                        <option value="bi-folder-fill">📁 پوشه</option>
+                        <option value="bi-file-pdf-fill">📄 PDF</option>
+                        <option value="bi-file-word-fill">📝 ورد</option>
+                        <option value="bi-file-excel-fill">📊 اکسل</option>
+                        <option value="bi-file-image-fill">🖼️ تصویر</option>
+                        <option value="bi-file-zip-fill">📦 فایل فشرده</option>
+                        <option value="bi-file-play-fill">🎬 ویدیو</option>
+                        <option value="bi-file-music-fill">🎵 صوتی</option>
+                        <option value="bi-file-text-fill">📃 متنی</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Color" class="form-label-modern">
+                        <i class="bi bi-palette"></i> رنگ
+                    </label>
+                    <div class="color-picker-wrapper">
+                        <input asp-for="Color" type="color" class="form-control-modern color-input" id="colorInput" value="#00d4ff" />
+                        <div class="color-presets">
+                            <button type="button" class="color-preset" data-color="#00d4ff" style="background:#00d4ff;"></button>
+                            <button type="button" class="color-preset" data-color="#7c3aed" style="background:#7c3aed;"></button>
+                            <button type="button" class="color-preset" data-color="#ec4899" style="background:#ec4899;"></button>
+                            <button type="button" class="color-preset" data-color="#10b981" style="background:#10b981;"></button>
+                            <button type="button" class="color-preset" data-color="#f59e0b" style="background:#f59e0b;"></button>
+                            <button type="button" class="color-preset" data-color="#ef4444" style="background:#ef4444;"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-modern btn-modern-primary">
+                <i class="bi bi-check-lg"></i> ساخت دسته‌بندی
+            </button>
+            <a asp-action="Index" class="btn-modern btn-modern-outline">
+                <i class="bi bi-x-lg"></i> انصراف
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.color-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('colorInput').value = btn.dataset.color;
+            });
+        });
+    </script>
+}

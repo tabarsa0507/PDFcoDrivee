@@ -1,0 +1,86 @@
+﻿@model List<PDFcoDrive.Models.UserFolderStats>
+@{
+    ViewData["Title"] = "پوشه‌های کاربران";
+}
+
+<div class="page-header">
+    <h1>پوشه‌های کاربران</h1>
+    <p>لیست کاربران سیستم — برای مشاهده پوشه‌ها روی هر کاربر کلیک کن</p>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card-modern">
+        <div class="empty-state-modern">
+            <div class="empty-icon"><i class="bi bi-people"></i></div>
+            <h4>هیچ کاربری یافت نشد</h4>
+        </div>
+    </div>
+}
+else
+{
+    <div class="users-grid">
+        @foreach (var stat in Model)
+        {
+            var initial = !string.IsNullOrEmpty(stat.User.FullName)
+            ? stat.User.FullName.Substring(0, 1).ToUpper()
+            : "?";
+
+            // تعیین برچسب و رنگ بر اساس نقش واقعی
+            var roleLabel = stat.User.Role switch
+            {
+                "Admin" => "مدیر سیستم",
+                "Board" => "هیئت مدیره",
+                _ => "کاربر ساده"
+            };
+
+            var roleColor = stat.User.Role switch
+            {
+                "Admin" => "linear-gradient(135deg, #ef4444, #f87171)",
+                "Board" => "linear-gradient(135deg, #f59e0b, #fbbf24)",
+                _ => "linear-gradient(135deg, #00d4ff, #38bdf8)"
+            };
+
+            <a asp-action="ViewUserFolders" asp-route-userId="@stat.User.Id"
+               class="user-card" style="text-decoration: none; color: inherit;">
+                <div class="user-card-header">
+                    <div class="user-card-avatar">@initial</div>
+                    <div class="user-card-info">
+                        <h4>@stat.User.FullName</h4>
+                        <span>@stat.User.NationalCode</span>
+                    </div>
+                    <span class="user-card-role" style="background: @roleColor;">
+                        @roleLabel
+                    </span>
+                </div>
+                <div class="user-card-stats">
+                    <div class="user-card-stat">
+                        <i class="bi bi-folder-fill"></i>
+                        <div>
+                            <strong>@stat.TotalFolders</strong>
+                            <span>کل پوشه</span>
+                        </div>
+                    </div>
+                    <div class="user-card-stat">
+                        <i class="bi bi-folder2"></i>
+                        <div>
+                            <strong>@stat.RootFolders</strong>
+                            <span>پوشه اصلی</span>
+                        </div>
+                    </div>
+                    <div class="user-card-stat">
+                        <i class="bi bi-files"></i>
+                        <div>
+                            <strong>@stat.TotalFiles</strong>
+                            <span>فایل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="user-card-footer">
+                    <span>مشاهده پوشه‌ها</span>
+                    <i class="bi bi-arrow-left"></i>
+                </div>
+            </a>
+        }
+    </div>
+}

@@ -1,0 +1,148 @@
+﻿@model List<PDFcoDrive.Models.User>
+@{
+    ViewData["Title"] = "کاربران";
+    var fileCounts = ViewBag.FileCounts as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var pepperKey = ViewBag.PepperKey as string ?? "";
+    var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+}
+
+<div class="page-header">
+    <h1>کاربران</h1>
+    <p>مدیریت کاربران سیستم</p>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-modern success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>عملیات با موفقیت انجام شد</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-modern error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-modern error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<!-- Pepper Key Display -->
+<div class="security-badge">
+    <div class="security-icon">
+        <i class="bi bi-shield-lock-fill"></i>
+    </div>
+    <div>
+        <strong>کلید امنیتی (Pepper Key)</strong>
+        <code>@pepperKey</code>
+    </div>
+</div>
+
+<div class="page-actions">
+    <a asp-action="Create" class="btn-modern btn-modern-primary">
+        <i class="bi bi-person-plus-fill"></i>
+        کاربر جدید
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card-modern">
+        <div class="empty-state-modern">
+            <div class="empty-icon"><i class="bi bi-people"></i></div>
+            <h4>هیچ کاربری یافت نشد</h4>
+        </div>
+    </div>
+}
+else
+{
+    <div class="users-table-wrapper">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>کاربر</th>
+                    <th>کد ملی</th>
+                    <th>نقش</th>
+                    <th>فایل‌ها</th>
+                    <th>آخرین ورود</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    var initial = (user.FullName ?? "?").Substring(0, 1).ToUpper();
+                    var fileCount = fileCounts.ContainsKey(user.Id) ? fileCounts[user.Id] : 0;
+                    var isMainAdmin = user.NationalCode == "2122767111";
+
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-cell-avatar">@initial</div>
+                                <div>
+                                    <strong>@user.FullName</strong>
+                                    <span>@user.Id.Substring(0, Math.Min(8, user.Id.Length))...</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><code>@user.NationalCode</code></td>
+                        <td>
+                            @if (user.Role == "Admin")
+                            {
+                                <span class="badge-status success"><i class="bi bi-shield-fill"></i> مدیر</span>
+                            }
+                            else if (user.Role == "Board")
+                            {
+                                <span class="badge-status warning"><i class="bi bi-star-fill"></i> هیئت مدیره</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status warning"><i class="bi bi-person-fill"></i> کاربر</span>
+                            }
+                        </td>
+                        <td><span class="badge-count"><i class="bi bi-files"></i> @fileCount</span></td>
+                        <td>
+                            @if (user.LastLoginAt.HasValue)
+                            {
+                                <span style="font-size: 11px; color: #94a3b8;">
+                                    @user.LastLoginAt.Value.ToString("yyyy/MM/dd HH:mm")
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="font-size: 11px; color: #64748b;">هرگز</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn-action edit" title="ویرایش">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="ResetPassword" asp-route-id="@user.Id" class="btn-action" title="تغییر رمز" style="color: #fbbf24;">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                                @if (!isMainAdmin)
+                                {
+                                    <form asp-action="Delete" asp-route-id="@user.Id" method="post"
+                                          onsubmit="return confirm('حذف شود؟');"
+                                          style="display: inline; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-action delete" title="حذف">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

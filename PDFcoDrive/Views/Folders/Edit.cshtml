@@ -1,0 +1,133 @@
+﻿@model PDFcoDrive.Models.Folder
+@{
+    ViewData["Title"] = "ویرایش پوشه";
+    var users = ViewBag.Users as List<PDFcoDrive.Models.User> ?? new();
+    var currentAccess = (int)Model.Access;
+}
+
+<div class="page-header">
+    <h1>ویرایش پوشه</h1>
+    <p>@Model.Name</p>
+</div>
+
+<div class="form-card">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert-modern error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@ViewBag.Error</span>
+            </div>
+        }
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-folder"></i> نام پوشه</label>
+            <input type="text" name="name" value="@Model.Name" class="form-control-modern" required maxlength="200" />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-text-paragraph"></i> توضیحات</label>
+            <textarea name="description" class="form-control-modern" rows="2" maxlength="500">@Model.Description</textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-shield-fill"></i> سطح دسترسی</label>
+            <div class="access-options">
+                <label class="access-option">
+                    <input type="radio" name="access" value="0" checked="@(currentAccess == 0)" />
+                    <div class="access-card">
+                        <i class="bi bi-lock-fill"></i>
+                        <strong>خصوصی</strong>
+                        <span>فقط خودت</span>
+                    </div>
+                </label>
+                <label class="access-option">
+                    <input type="radio" name="access" value="1" checked="@(currentAccess == 1)" />
+                    <div class="access-card">
+                        <i class="bi bi-globe"></i>
+                        <strong>عمومی</strong>
+                        <span>همه</span>
+                    </div>
+                </label>
+                <label class="access-option">
+                    <input type="radio" name="access" value="2" checked="@(currentAccess == 2)" />
+                    <div class="access-card">
+                        <i class="bi bi-people-fill"></i>
+                        <strong>کاربران خاص</strong>
+                        <span>انتخاب‌شده‌ها</span>
+                    </div>
+                </label>
+                <label class="access-option">
+                    <input type="radio" name="access" value="3" checked="@(currentAccess == 3)" />
+                    <div class="access-card">
+                        <i class="bi bi-shield-fill"></i>
+                        <strong>هیئت مدیره</strong>
+                        <span>Board</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group" id="usersSelectGroup" style="display: @(currentAccess == 2 ? "block" : "none");">
+            <label class="form-label-modern"><i class="bi bi-people"></i> کاربران مجاز</label>
+            <div class="users-checkbox-list">
+                @foreach (var u in users)
+                {
+                    var isChecked = Model.AllowedUserIds.Contains(u.Id);
+                    <label class="user-checkbox-item">
+                        <input type="checkbox" name="allowedUserIds" value="@u.Id" checked="@isChecked" />
+                        <div class="user-checkbox-avatar">@(u.FullName.Substring(0, 1).ToUpper())</div>
+                        <div class="user-checkbox-info">
+                            <strong>@u.FullName</strong>
+                            <span>@u.NationalCode</span>
+                        </div>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label-modern"><i class="bi bi-emoji-smile"></i> آیکون</label>
+                    <select name="icon" class="form-control-modern">
+                        <option value="bi-folder-fill" selected="@(Model.Icon == "bi-folder-fill")">📁 پوشه</option>
+                        <option value="bi-briefcase-fill" selected="@(Model.Icon == "bi-briefcase-fill")">💼 کار</option>
+                        <option value="bi-people-fill" selected="@(Model.Icon == "bi-people-fill")">👥 تیم</option>
+                        <option value="bi-star-fill" selected="@(Model.Icon == "bi-star-fill")">⭐ مهم</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label-modern"><i class="bi bi-palette"></i> رنگ</label>
+                    <input type="color" name="color" value="@Model.Color" class="form-control-modern color-input" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-modern btn-modern-primary">
+                <i class="bi bi-check-lg"></i> ذخیره
+            </button>
+            <a asp-action="Browse" asp-route-id="@Model.Id" class="btn-modern btn-modern-outline">
+                <i class="bi bi-x-lg"></i> انصراف
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const accessRadios = document.querySelectorAll('input[name="access"]');
+        const usersGroup = document.getElementById('usersSelectGroup');
+
+        accessRadios.forEach(r => {
+            r.addEventListener('change', function () {
+                usersGroup.style.display = this.value === '2' ? 'block' : 'none';
+            });
+        });
+    </script>
+}

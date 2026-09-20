@@ -1,0 +1,66 @@
+﻿@{
+    ViewData["Title"] = "کاربر جدید";
+}
+
+<div class="page-header">
+    <h1>کاربر جدید</h1>
+    <p>ساخت کاربر جدید</p>
+</div>
+
+<div class="form-card">
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert-modern error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@ViewBag.Error</span>
+            </div>
+        }
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-person-badge"></i> کد ملی</label>
+            <input type="text" name="nationalCode" class="form-control-modern"
+                   placeholder="10 رقم" maxlength="10" pattern="\d{10}" inputmode="numeric" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-person"></i> نام و نام خانوادگی</label>
+            <input type="text" name="fullName" class="form-control-modern" required />
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label-modern"><i class="bi bi-lock"></i> رمز عبور</label>
+                    <input type="password" name="password" class="form-control-modern" required minlength="6" />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label-modern"><i class="bi bi-lock-fill"></i> تکرار رمز</label>
+                    <input type="password" name="confirmPassword" class="form-control-modern" required minlength="6" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-shield-fill"></i> نقش</label>
+            <select name="role" class="form-control-modern">
+                <option value="User">کاربر عادی</option>
+                <option value="Admin">مدیر</option>
+                <option value="Board">هیئت مدیره</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-modern btn-modern-primary">
+                <i class="bi bi-check-lg"></i> ساخت کاربر
+            </button>
+            <a asp-action="Index" class="btn-modern btn-modern-outline">
+                <i class="bi bi-x-lg"></i> انصراف
+            </a>
+        </div>
+    </form>
+</div>

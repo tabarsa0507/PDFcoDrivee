@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "دسترسی غیرمجاز";
+}
+
+<div class="card-modern" style="max-width: 600px; margin: 60px auto;">
+    <div class="empty-state-modern">
+        <div class="empty-icon" style="background: linear-gradient(135deg, #fef2f2, #fee2e2); color: #ef4444; width: 100px; height: 100px; font-size: 48px;">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h4 style="font-size: 20px; margin-bottom: 8px;">دسترسی غیرمجاز</h4>
+        <p style="margin-bottom: 24px; font-size: 14px; color: var(--text-secondary);">
+            شما اجازه دسترسی به این بخش را ندارید.
+        </p>
+        <a asp-controller="Home" asp-action="Index" class="btn-modern btn-modern-primary">
+            <i class="bi bi-house-door"></i>
+            بازگشت به داشبورد
+        </a>
+    </div>
+</div>

@@ -1,0 +1,107 @@
+﻿@model PDFcoDrive.Models.FileItem
+@{
+    ViewData["Title"] = "جزئیات فایل";
+    var category = ViewBag.Category as PDFcoDrive.Models.Category;
+    var folder = ViewBag.Folder as PDFcoDrive.Models.Folder;
+}
+
+<div class="page-header">
+    <h1>جزئیات فایل</h1>
+    <p>اطلاعات کامل فایل</p>
+</div>
+
+<div class="form-card" style="max-width: 800px;">
+    <div class="file-details-header">
+        <div class="file-details-icon">
+            <i class="bi @GetFileIcon(Model.Extension)"></i>
+        </div>
+        <div>
+            <h3>@Model.DisplayName</h3>
+            <span class="file-details-badge">
+                @(category?.Name ?? "بدون دسته")
+                @if (folder != null)
+                {
+                    <span> • @folder.Name</span>
+                }
+            </span>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-item">
+            <span>حجم فایل</span>
+            <strong>@FormatSize(Model.SizeBytes)</strong>
+        </div>
+        <div class="info-item">
+            <span>پسوند</span>
+            <strong>@Model.Extension</strong>
+        </div>
+        <div class="info-item">
+            <span>تعداد دانلود</span>
+            <strong>@Model.DownloadCount</strong>
+        </div>
+        <div class="info-item">
+            <span>تعداد بازدید</span>
+            <strong>@Model.ViewCount</strong>
+        </div>
+        <div class="info-item">
+            <span>آپلود کننده</span>
+            <strong>@Model.UploadedByUserName</strong>
+        </div>
+        <div class="info-item">
+            <span>تاریخ آپلود</span>
+            <strong>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</strong>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="hash-info">
+            <label class="form-label-modern"><i class="bi bi-text-paragraph"></i> توضیحات</label>
+            <p style="color: var(--text-secondary); margin-top: 8px;">@Model.Description</p>
+        </div>
+    }
+
+    <div class="hash-info">
+        <label class="form-label-modern"><i class="bi bi-shield-check"></i> SHA256 محتوای فایل</label>
+        <code class="hash-code">@Model.ContentHash</code>
+    </div>
+
+    <div class="form-actions">
+        <a asp-action="Download" asp-route-id="@Model.Id" class="btn-modern btn-modern-primary">
+            <i class="bi bi-download"></i> دانلود فایل
+        </a>
+        <a asp-action="Index" class="btn-modern btn-modern-outline">
+            <i class="bi bi-arrow-right"></i> بازگشت
+        </a>
+    </div>
+</div>
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    string GetFileIcon(string ext)
+    {
+        return ext.ToLower() switch
+        {
+            ".pdf" => "bi-file-pdf-fill",
+            ".doc" or ".docx" => "bi-file-word-fill",
+            ".xls" or ".xlsx" => "bi-file-excel-fill",
+            ".ppt" or ".pptx" => "bi-file-ppt-fill",
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => "bi-file-image-fill",
+            ".zip" or ".rar" or ".7z" => "bi-file-zip-fill",
+            ".mp4" or ".mkv" or ".avi" => "bi-file-play-fill",
+            ".mp3" or ".wav" => "bi-file-music-fill",
+            ".txt" or ".md" => "bi-file-text-fill",
+            _ => "bi-file-earmark-fill"
+        };
+    }
+}

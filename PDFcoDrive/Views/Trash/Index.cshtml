@@ -1,0 +1,142 @@
+﻿@model List<PDFcoDrive.Models.TrashItem>
+@{
+    ViewData["Title"] = "سبد بازیافت";
+    var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+}
+
+<div class="page-header">
+    <h1>سبد بازیافت</h1>
+    <p>فایل‌های حذف شده — بعد از 30 روز خودکار پاک می‌شن</p>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-modern success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-modern error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="card-modern">
+        <div class="empty-state-modern">
+            <div class="empty-icon">
+                <i class="bi bi-trash"></i>
+            </div>
+            <h4>سبد بازیافت خالیه</h4>
+            <p>هیچ فایلی توی سبد بازیافت نیست</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="page-actions" style="justify-content: space-between; align-items: center;">
+        <div class="trash-info">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>@Model.Count فایل در سبد بازیافت</span>
+        </div>
+        <form asp-action="EmptyAll" method="post"
+              onsubmit="return confirm('آیا از پاک کردن همه موارد مطمئن هستید؟ این عملیات قابل بازگشت نیست.');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-modern btn-modern-danger">
+                <i class="bi bi-trash-fill"></i>
+                پاک کردن همه
+            </button>
+        </form>
+    </div>
+
+    <div class="trash-list">
+        @foreach (var item in Model)
+        {
+            var expiresIn = (item.ExpiresAt - DateTime.Now).Days;
+            var isExpiring = expiresIn <= 7;
+
+            <div class="trash-item">
+                <div class="trash-icon">
+                    <i class="bi @GetFileIcon(item.Extension)"></i>
+                </div>
+                <div class="trash-body">
+                    <h4>@item.DisplayName</h4>
+                    <div class="trash-meta">
+                        <span>
+                            <i class="bi bi-hdd"></i>
+                            @FormatSize(item.SizeBytes)
+                        </span>
+                        <span>
+                            <i class="bi bi-person"></i>
+                            @item.DeletedByUserName
+                        </span>
+                        <span>
+                            <i class="bi bi-calendar"></i>
+                            @item.DeletedAt.ToString("yyyy/MM/dd HH:mm")
+                        </span>
+                        <span class="trash-expire @(isExpiring ? "danger" : "")">
+                            <i class="bi bi-clock-history"></i>
+                            @if (expiresIn > 0)
+                            {
+                                <text>@expiresIn روز مانده</text>
+                            }
+                            else
+                            {
+                                <text>منقضی شده</text>
+                            }
+                        </span>
+                    </div>
+                </div>
+                <div class="trash-actions">
+                    <form asp-action="Restore" asp-route-id="@item.Id" method="post" style="display: inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-action restore" title="بازیابی">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </form>
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post"
+                          onsubmit="return confirm('برای همیشه حذف شود؟');"
+                          style="display: inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-action delete" title="حذف دائمی">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    string GetFileIcon(string ext)
+    {
+        return ext.ToLower() switch
+        {
+            ".pdf" => "bi-file-pdf-fill",
+            ".doc" or ".docx" => "bi-file-word-fill",
+            ".xls" or ".xlsx" => "bi-file-excel-fill",
+            ".ppt" or ".pptx" => "bi-file-ppt-fill",
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => "bi-file-image-fill",
+            ".zip" or ".rar" or ".7z" => "bi-file-zip-fill",
+            ".mp4" or ".mkv" or ".avi" => "bi-file-play-fill",
+            ".mp3" or ".wav" => "bi-file-music-fill",
+            ".txt" or ".md" => "bi-file-text-fill",
+            _ => "bi-file-earmark-fill"
+        };
+    }
+}

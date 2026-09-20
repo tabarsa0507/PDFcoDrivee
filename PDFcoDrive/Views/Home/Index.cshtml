@@ -1,0 +1,340 @@
+﻿@{
+    ViewData["Title"] = "داشبورد";
+    int totalFiles = (int)(ViewBag.TotalFiles ?? 0);
+    int totalDownloads = (int)(ViewBag.TotalDownloads ?? 0);
+    int totalCategories = (int)(ViewBag.TotalCategories ?? 0);
+    int totalUsers = (int)(ViewBag.TotalUsers ?? 0);
+    int totalFolders = (int)(ViewBag.TotalFolders ?? 0);
+    int totalTrash = (int)(ViewBag.TotalTrash ?? 0);
+    long totalSize = (long)(ViewBag.TotalSize ?? 0L);
+    var latestFiles = ViewBag.LatestFiles as List<PDFcoDrive.Models.FileItem> ?? new();
+    var topDownloads = ViewBag.TopDownloads as List<PDFcoDrive.Models.FileItem> ?? new();
+    var sharedWithMe = ViewBag.SharedWithMe as List<PDFcoDrive.Models.SharedFileView> ?? new();
+    int unreadShared = (int)(ViewBag.UnreadSharedCount ?? 0);
+}
+
+<div class="page-header">
+    <h1>داشبورد</h1>
+    <p>نمای کلی سیستم مدیریت فایل PDFcoDrive</p>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-modern success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-modern error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<!-- ============================================
+     کارت‌های آماری
+     ============================================ -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern blue">
+            <div class="stat-icon-modern blue"><i class="bi bi-files"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalFiles</h3>
+                <p>کل فایل‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern purple">
+            <div class="stat-icon-modern purple"><i class="bi bi-folder-fill"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalFolders</h3>
+                <p>پوشه‌های من</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern green">
+            <div class="stat-icon-modern green"><i class="bi bi-download"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalDownloads</h3>
+                <p>دانلودها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern orange">
+            <div class="stat-icon-modern orange"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalUsers</h3>
+                <p>کاربران</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- آمار جزئی -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="mini-stat">
+            <div class="mini-stat-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">
+                <i class="bi bi-trash-fill"></i>
+            </div>
+            <div>
+                <strong>@totalTrash</strong>
+                <span>سبد بازیافت</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="mini-stat">
+            <div class="mini-stat-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                <i class="bi bi-tags-fill"></i>
+            </div>
+            <div>
+                <strong>@totalCategories</strong>
+                <span>دسته‌بندی</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="mini-stat">
+            <div class="mini-stat-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                <i class="bi bi-hdd-fill"></i>
+            </div>
+            <div>
+                <strong>@FormatSize(totalSize)</strong>
+                <span>حجم کل</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="mini-stat">
+            <div class="mini-stat-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                <i class="bi bi-share-fill"></i>
+            </div>
+            <div>
+                <strong>@unreadShared</strong>
+                <span>اشتراک جدید</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- دکمه‌های سریع -->
+<div class="quick-actions mb-4">
+    <a asp-controller="Files" asp-action="Upload" class="quick-action">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #00d4ff, #38bdf8);">
+            <i class="bi bi-cloud-upload-fill"></i>
+        </div>
+        <div class="quick-action-body">
+            <h4>آپلود فایل</h4>
+            <p>فایل جدید آپلود کن</p>
+        </div>
+        <i class="bi bi-arrow-left quick-action-arrow"></i>
+    </a>
+
+    <a asp-controller="Folders" asp-action="MyWorkspace" class="quick-action">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
+            <i class="bi bi-person-workspace"></i>
+        </div>
+        <div class="quick-action-body">
+            <h4>میز کار من</h4>
+            <p>پوشه شخصی خودت</p>
+        </div>
+        <i class="bi bi-arrow-left quick-action-arrow"></i>
+    </a>
+
+    <a asp-controller="Folders" asp-action="Index" class="quick-action">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+            <i class="bi bi-folder-plus"></i>
+        </div>
+        <div class="quick-action-body">
+            <h4>پوشه جدید</h4>
+            <p>یه پوشه بساز</p>
+        </div>
+        <i class="bi bi-arrow-left quick-action-arrow"></i>
+    </a>
+</div>
+
+<!-- فایل‌های به اشتراک گذاشته شده با من -->
+@if (sharedWithMe.Any())
+{
+    <div class="card-modern mb-4">
+        <div class="section-header">
+            <h3>
+                <i class="bi bi-share-fill" style="color: #10b981;"></i>
+                فایل‌های به اشتراک گذاشته شده با من
+                @if (unreadShared > 0)
+                {
+                    <span class="nav-badge" style="margin-right: 8px;">@unreadShared</span>
+                }
+            </h3>
+        </div>
+
+        <div class="latest-files-list">
+            @foreach (var item in sharedWithMe.Take(6))
+            {
+                <div class="latest-file-item @(!item.Shared.IsRead ? "unread" : "")">
+                    <div class="latest-file-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                        <i class="bi @GetFileIcon(item.File.Extension)"></i>
+                    </div>
+                    <div class="latest-file-info">
+                        <h5>@item.File.DisplayName</h5>
+                        <div class="latest-file-meta">
+                            <span><i class="bi bi-person"></i> @item.Shared.SharedByUserName</span>
+                            <span><i class="bi bi-hdd"></i> @FormatSize(item.File.SizeBytes)</span>
+                            <span><i class="bi bi-calendar"></i> @item.Shared.SharedAt.ToString("yyyy/MM/dd HH:mm")</span>
+                        </div>
+                    </div>
+                    <div class="latest-file-actions">
+                        <a asp-controller="Files" asp-action="Download" asp-route-id="@item.File.Id"
+                           class="btn-action download" title="دانلود">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <a asp-controller="Folders" asp-action="SaveToMyFolder" asp-route-fileId="@item.File.Id"
+                           class="btn-action" title="ذخیره در پوشه من"
+                           style="color: #fbbf24 !important; background: rgba(251, 191, 36, 0.15) !important; border-color: rgba(251, 191, 36, 0.4) !important;">
+                            <i class="bi bi-folder-symlink"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Grid Layout -->
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card-modern h-100">
+            <div class="section-header">
+                <h3>
+                    <i class="bi bi-clock-history"></i>
+                    آخرین فایل‌های آپلود شده
+                </h3>
+                <a asp-controller="Files" asp-action="Index" class="btn-modern btn-modern-outline" style="padding: 6px 14px; font-size: 12px;">
+                    مشاهده همه
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+            </div>
+
+            @if (!latestFiles.Any())
+            {
+                <div class="empty-state-modern">
+                    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                    <h4>هنوز فایلی آپلود نشده</h4>
+                    <p>اولین فایل خود را آپلود کنید!</p>
+                </div>
+            }
+            else
+            {
+                <div class="latest-files-list">
+                    @foreach (var file in latestFiles)
+                    {
+                        <div class="latest-file-item">
+                            <div class="latest-file-icon" style="background: linear-gradient(135deg, #00d4ff, #7c3aed);">
+                                <i class="bi @GetFileIcon(file.Extension)"></i>
+                            </div>
+                            <div class="latest-file-info">
+                                <h5>@file.DisplayName</h5>
+                                <div class="latest-file-meta">
+                                    <span><i class="bi bi-hdd"></i> @FormatSize(file.SizeBytes)</span>
+                                    <span><i class="bi bi-download"></i> @file.DownloadCount</span>
+                                    <span><i class="bi bi-calendar"></i> @file.CreatedAt.ToString("yyyy/MM/dd")</span>
+                                </div>
+                            </div>
+                            <div class="latest-file-actions">
+                                <a asp-controller="Files" asp-action="Download" asp-route-id="@file.Id" class="btn-action download" title="دانلود">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <a asp-controller="Files" asp-action="Details" asp-route-id="@file.Id" class="btn-action" title="جزئیات">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card-modern h-100">
+            <div class="section-header">
+                <h3>
+                    <i class="bi bi-trophy-fill" style="color: #fbbf24;"></i>
+                    پر دانلودترین‌ها
+                </h3>
+            </div>
+
+            @if (!topDownloads.Any())
+            {
+                <div class="empty-state-modern">
+                    <div class="empty-icon"><i class="bi bi-trophy"></i></div>
+                    <h4>هنوز دانلودی نیست</h4>
+                    <p>فایل‌ها را با همکارانت به اشتراک بگذار</p>
+                </div>
+            }
+            else
+            {
+                <div class="top-downloads-list">
+                    @for (int i = 0; i < topDownloads.Count; i++)
+                    {
+                        var file = topDownloads[i];
+                        var rank = i + 1;
+                        var rankColor = rank switch
+                        {
+                            1 => "#fbbf24",
+                            2 => "#94a3b8",
+                            3 => "#cd7f32",
+                            _ => "#64748b"
+                        };
+
+                        <div class="top-download-item">
+                            <div class="top-rank" style="background: @rankColor;">@rank</div>
+                            <div class="top-file-icon">
+                                <i class="bi @GetFileIcon(file.Extension)"></i>
+                            </div>
+                            <div class="top-file-info">
+                                <strong>@file.DisplayName</strong>
+                                <span>@file.DownloadCount دانلود</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    string GetFileIcon(string ext)
+    {
+        return ext.ToLower() switch
+        {
+            ".pdf" => "bi-file-pdf-fill",
+            ".doc" or ".docx" => "bi-file-word-fill",
+            ".xls" or ".xlsx" => "bi-file-excel-fill",
+            ".ppt" or ".pptx" => "bi-file-ppt-fill",
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => "bi-file-image-fill",
+            ".zip" or ".rar" or ".7z" => "bi-file-zip-fill",
+            ".mp4" or ".mkv" or ".avi" => "bi-file-play-fill",
+            ".mp3" or ".wav" => "bi-file-music-fill",
+            ".txt" or ".md" => "bi-file-text-fill",
+            _ => "bi-file-earmark-fill"
+        };
+    }
+}

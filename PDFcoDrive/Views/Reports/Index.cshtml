@@ -1,0 +1,327 @@
+﻿@{
+    ViewData["Title"] = "گزارش‌ها";
+    var users = ViewBag.Users as List<PDFcoDrive.Models.User> ?? new();
+    var recentDownloads = ViewBag.RecentDownloads as List<PDFcoDrive.Models.DownloadLog> ?? new();
+    var recentViews = ViewBag.RecentViews as List<PDFcoDrive.Models.ViewLog> ?? new();
+    var topDownloads = ViewBag.TopDownloads as List<PDFcoDrive.Models.FileItem> ?? new();
+    var topViews = ViewBag.TopViews as List<PDFcoDrive.Models.FileItem> ?? new();
+    var chartData = ViewBag.ChartData as List<object> ?? new();
+
+    int totalFiles = (int)(ViewBag.TotalFiles ?? 0);
+    int totalDownloads = (int)(ViewBag.TotalDownloads ?? 0);
+    int totalViews = (int)(ViewBag.TotalViews ?? 0);
+    int totalUsers = (int)(ViewBag.TotalUsers ?? 0);
+    int totalFolders = (int)(ViewBag.TotalFolders ?? 0);
+    long totalSize = (long)(ViewBag.TotalSize ?? 0L);
+    int todayDownloads = (int)(ViewBag.TodayDownloads ?? 0);
+    int todayViews = (int)(ViewBag.TodayViews ?? 0);
+    int todayFiles = (int)(ViewBag.TodayFiles ?? 0);
+
+    string? filterUserId = ViewBag.FilterUserId as string;
+    string? filterFrom = ViewBag.FilterFrom as string;
+    string? filterTo = ViewBag.FilterTo as string;
+}
+
+<div class="page-header">
+    <h1>گزارش‌ها</h1>
+    <p>آمار و فعالیت‌های سیستم</p>
+</div>
+
+<!-- ============================================
+     آمار کلی
+     ============================================ -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern blue">
+            <div class="stat-icon-modern blue"><i class="bi bi-files"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalFiles</h3>
+                <p>کل فایل‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern green">
+            <div class="stat-icon-modern green"><i class="bi bi-download"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalDownloads</h3>
+                <p>دانلودها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern purple">
+            <div class="stat-icon-modern purple"><i class="bi bi-eye"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalViews</h3>
+                <p>بازدیدها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card-modern orange">
+            <div class="stat-icon-modern orange"><i class="bi bi-people"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalUsers</h3>
+                <p>کاربران</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- آمار امروز -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="mini-stat">
+            <div class="mini-stat-icon" style="background: linear-gradient(135deg, #00d4ff, #38bdf8);">
+                <i class="bi bi-cloud-upload-fill"></i>
+            </div>
+            <div>
+                <strong>@todayFiles</strong>
+                <span>فایل امروز</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="mini-stat">
+            <div class="mini-stat-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                <i class="bi bi-download"></i>
+            </div>
+            <div>
+                <strong>@todayDownloads</strong>
+                <span>دانلود امروز</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="mini-stat">
+            <div class="mini-stat-icon" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
+                <i class="bi bi-eye"></i>
+            </div>
+            <div>
+                <strong>@todayViews</strong>
+                <span>بازدید امروز</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- فیلترها -->
+<div class="card-modern mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label-modern"><i class="bi bi-person"></i> کاربر</label>
+            <select name="userId" class="form-control-modern">
+                <option value="">— همه کاربران —</option>
+                @foreach (var user in users)
+                {
+                    <option value="@user.Id" selected="@(filterUserId == user.Id)">@user.FullName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label-modern"><i class="bi bi-calendar"></i> از تاریخ</label>
+            <input type="date" name="from" value="@filterFrom" class="form-control-modern" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label-modern"><i class="bi bi-calendar"></i> تا تاریخ</label>
+            <input type="date" name="to" value="@filterTo" class="form-control-modern" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn-modern btn-modern-primary" style="width: 100%;">
+                <i class="bi bi-funnel"></i> فیلتر
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ============================================
+     Grid Layout
+     ============================================ -->
+<div class="row g-4">
+
+    <!-- آخرین دانلودها -->
+    <div class="col-lg-6">
+        <div class="card-modern h-100">
+            <div class="section-header">
+                <h3><i class="bi bi-download"></i> آخرین دانلودها</h3>
+            </div>
+
+            @if (!recentDownloads.Any())
+            {
+                <div class="empty-state-modern" style="padding: 30px 20px;">
+                    <div class="empty-icon" style="width: 60px; height: 60px; font-size: 26px;">
+                        <i class="bi bi-download"></i>
+                    </div>
+                    <h4 style="font-size: 14px;">دانلودی ثبت نشده</h4>
+                </div>
+            }
+            else
+            {
+                <div class="report-list">
+                    @foreach (var log in recentDownloads)
+                    {
+                        <div class="report-item">
+                            <div class="report-icon download">
+                                <i class="bi bi-download"></i>
+                            </div>
+                            <div class="report-info">
+                                <strong>@log.FileName</strong>
+                                <span>
+                                    <i class="bi bi-person"></i> @log.UserName
+                                    <span class="report-time">@log.DownloadedAt.ToString("MM/dd HH:mm")</span>
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- آخرین بازدیدها -->
+    <div class="col-lg-6">
+        <div class="card-modern h-100">
+            <div class="section-header">
+                <h3><i class="bi bi-eye"></i> آخرین بازدیدها</h3>
+            </div>
+
+            @if (!recentViews.Any())
+            {
+                <div class="empty-state-modern" style="padding: 30px 20px;">
+                    <div class="empty-icon" style="width: 60px; height: 60px; font-size: 26px;">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                    <h4 style="font-size: 14px;">بازدیدی ثبت نشده</h4>
+                </div>
+            }
+            else
+            {
+                <div class="report-list">
+                    @foreach (var log in recentViews)
+                    {
+                        <div class="report-item">
+                            <div class="report-icon view">
+                                <i class="bi bi-eye"></i>
+                            </div>
+                            <div class="report-info">
+                                <strong>@log.FileName</strong>
+                                <span>
+                                    <i class="bi bi-person"></i> @log.UserName
+                                    <span class="report-time">@log.ViewedAt.ToString("MM/dd HH:mm")</span>
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- پر دانلودها -->
+    <div class="col-lg-6">
+        <div class="card-modern h-100">
+            <div class="section-header">
+                <h3><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> پر دانلودترین فایل‌ها</h3>
+            </div>
+
+            @if (!topDownloads.Any())
+            {
+                <div class="empty-state-modern" style="padding: 30px 20px;">
+                    <div class="empty-icon" style="width: 60px; height: 60px; font-size: 26px;">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <h4 style="font-size: 14px;">آماری موجود نیست</h4>
+                </div>
+            }
+            else
+            {
+                <div class="top-downloads-list">
+                    @for (int i = 0; i < topDownloads.Count; i++)
+                    {
+                        var file = topDownloads[i];
+                        var rank = i + 1;
+                        var rankColor = rank switch
+                        {
+                            1 => "#fbbf24",
+                            2 => "#94a3b8",
+                            3 => "#cd7f32",
+                            _ => "#64748b"
+                        };
+
+                        <div class="top-download-item">
+                            <div class="top-rank" style="background: @rankColor;">@rank</div>
+                            <div class="top-file-icon">
+                                <i class="bi bi-file-earmark-fill"></i>
+                            </div>
+                            <div class="top-file-info">
+                                <strong>@file.DisplayName</strong>
+                                <span>@file.DownloadCount دانلود</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- پر بازدیدها -->
+    <div class="col-lg-6">
+        <div class="card-modern h-100">
+            <div class="section-header">
+                <h3><i class="bi bi-fire" style="color: #ef4444;"></i> پر بازدیدترین فایل‌ها</h3>
+            </div>
+
+            @if (!topViews.Any())
+            {
+                <div class="empty-state-modern" style="padding: 30px 20px;">
+                    <div class="empty-icon" style="width: 60px; height: 60px; font-size: 26px;">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                    <h4 style="font-size: 14px;">آماری موجود نیست</h4>
+                </div>
+            }
+            else
+            {
+                <div class="top-downloads-list">
+                    @for (int i = 0; i < topViews.Count; i++)
+                    {
+                        var file = topViews[i];
+                        var rank = i + 1;
+                        var rankColor = rank switch
+                        {
+                            1 => "#ef4444",
+                            2 => "#f97316",
+                            3 => "#f59e0b",
+                            _ => "#64748b"
+                        };
+
+                        <div class="top-download-item">
+                            <div class="top-rank" style="background: @rankColor;">@rank</div>
+                            <div class="top-file-icon">
+                                <i class="bi bi-file-earmark-fill"></i>
+                            </div>
+                            <div class="top-file-info">
+                                <strong>@file.DisplayName</strong>
+                                <span>@file.ViewCount بازدید</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

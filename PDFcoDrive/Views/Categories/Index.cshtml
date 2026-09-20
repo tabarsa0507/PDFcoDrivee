@@ -1,0 +1,81 @@
+﻿@model List<PDFcoDrive.Models.Category>
+@{
+    ViewData["Title"] = "دسته‌بندی‌ها";
+}
+
+<div class="page-header">
+    <h1>دسته‌بندی‌ها</h1>
+    <p>مدیریت دسته‌بندی‌های فایل‌ها</p>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-modern success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-modern error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<div class="page-actions">
+    <a asp-action="Create" class="btn-modern btn-modern-primary">
+        <i class="bi bi-plus-lg"></i>
+        دسته‌بندی جدید
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card-modern">
+        <div class="empty-state-modern">
+            <div class="empty-icon">
+                <i class="bi bi-tags"></i>
+            </div>
+            <h4>هنوز دسته‌بندی نساخته‌اید</h4>
+            <p>اولین دسته‌بندی خود را بسازید!</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="categories-grid">
+        @foreach (var category in Model)
+        {
+            <div class="category-card">
+                <div class="category-card-header" style="background: @category.Color;">
+                    <i class="bi @category.Icon"></i>
+                </div>
+                <div class="category-card-body">
+                    <h4>@category.Name</h4>
+                    @if (!string.IsNullOrEmpty(category.Description))
+                    {
+                        <p>@category.Description</p>
+                    }
+                    <div class="category-card-meta">
+                        <span><i class="bi bi-files"></i> @category.FileCount فایل</span>
+                        <span><i class="bi bi-calendar"></i> @category.CreatedAt.ToString("yyyy/MM/dd")</span>
+                    </div>
+                </div>
+                <div class="category-card-actions">
+                    <a asp-action="Edit" asp-route-id="@category.Id" class="btn-action edit" title="ویرایش">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form asp-action="Delete" asp-route-id="@category.Id" method="post"
+                          onsubmit="return confirm('حذف شود؟');"
+                          style="display: inline; flex: 1;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-action delete" title="حذف" style="width: 100%;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+}

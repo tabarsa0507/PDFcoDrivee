@@ -1,0 +1,222 @@
+﻿@{
+    ViewData["Title"] = "انتقال فایل";
+    var file = ViewBag.File as PDFcoDrive.Models.FileItem;
+    var foldersJson = ViewBag.FoldersJson as string ?? "[]";
+}
+
+<div class="page-header">
+    <h1>انتقال فایل</h1>
+    <p>مسیر پوشه مقصد را انتخاب کن</p>
+</div>
+
+<div class="form-card" style="max-width: 700px;">
+    @if (file != null)
+    {
+        <div class="message-file-card">
+            <div class="message-file-icon">
+                <i class="bi bi-file-earmark-fill"></i>
+            </div>
+            <div class="message-file-info">
+                <h4>@file.DisplayName</h4>
+                <div class="message-file-meta">
+                    <span><i class="bi bi-hdd"></i> @FormatSize(file.SizeBytes)</span>
+                    <span><i class="bi bi-person"></i> @file.UploadedByUserName</span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="alert-modern success" style="background: rgba(0, 212, 255, 0.08); color: #00d4ff; border-color: rgba(0, 212, 255, 0.3);">
+        <i class="bi bi-arrow-repeat"></i>
+        <span>فایل از پوشه فعلی حذف و به پوشه جدید منتقل می‌شه</span>
+    </div>
+
+    <input type="hidden" id="foldersJsonData" value="@foldersJson" />
+
+    <form asp-action="SaveToMyFolder" method="post" id="moveForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="fileId" value="@file?.Id" />
+        <input type="hidden" name="targetFolderId" id="targetFolderId" />
+
+        <div class="form-group">
+            <label class="form-label-modern">
+                <i class="bi bi-signpost-2"></i> انتخاب مسیر پوشه
+            </label>
+            <div id="folderLevels" class="folder-levels"></div>
+            <small class="field-hint">سطح به سطح انتخاب کن تا به پوشه مورد نظر برسی</small>
+        </div>
+
+        <div class="form-group" id="pathPreviewGroup" style="display: none;">
+            <label class="form-label-modern">
+                <i class="bi bi-check-circle"></i> مسیر انتخاب‌شده
+            </label>
+            <div class="path-preview" id="pathPreview"></div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-modern btn-modern-primary" id="submitBtn" disabled>
+                <i class="bi bi-check-lg"></i> انتقال به این پوشه
+            </button>
+            <a asp-controller="Home" asp-action="Index" class="btn-modern btn-modern-outline">
+                <i class="bi bi-x-lg"></i> انصراف
+            </a>
+        </div>
+    </form>
+</div>
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var foldersJsonEl = document.getElementById('foldersJsonData');
+            var allFolders = [];
+
+            try {
+                allFolders = JSON.parse(foldersJsonEl.value || '[]');
+            } catch (e) {
+                allFolders = [];
+            }
+
+            var levelsContainer = document.getElementById('folderLevels');
+            var pathGroup = document.getElementById('pathPreviewGroup');
+            var pathPreview = document.getElementById('pathPreview');
+            var targetFolderId = document.getElementById('targetFolderId');
+            var submitBtn = document.getElementById('submitBtn');
+
+            var selectedPath = [];
+
+            function init() {
+                levelsContainer.innerHTML = '';
+                selectedPath = [];
+                targetFolderId.value = '';
+                submitBtn.disabled = true;
+                pathGroup.style.display = 'none';
+
+                var rootFolders = allFolders.filter(function (f) {
+                    return !f.parentId || f.parentId === null;
+                });
+
+                if (rootFolders.length === 0) {
+                    levelsContainer.innerHTML = '<div class="alert-modern error"><i class="bi bi-info-circle-fill"></i><span>هیچ پوشه‌ای نداری. اول پوشه بساز.</span></div>';
+                    return;
+                }
+
+                createLevel(rootFolders, 0);
+            }
+
+            function createLevel(folders, levelIndex) {
+                while (levelsContainer.children.length > levelIndex) {
+                    levelsContainer.removeChild(levelsContainer.lastChild);
+                }
+
+                var levelDiv = document.createElement('div');
+                levelDiv.className = 'folder-level';
+
+                var label = document.createElement('label');
+                label.className = 'form-label-modern';
+                label.style.fontSize = '12px';
+                label.style.marginTop = '12px';
+
+                if (levelIndex === 0) {
+                    label.innerHTML = '<i class="bi bi-folder-fill"></i> سطح ' + (levelIndex + 1);
+                } else {
+                    label.innerHTML = '<i class="bi bi-arrow-return-left"></i> زیرپوشه سطح ' + (levelIndex + 1);
+                }
+
+                var select = document.createElement('select');
+                select.className = 'form-control-modern';
+                select.innerHTML = '<option value="">— انتخاب پوشه —</option>';
+
+                folders.forEach(function (f) {
+                    var opt = document.createElement('option');
+                    opt.value = f.id;
+                    opt.textContent = f.name;
+                    select.appendChild(opt);
+                });
+
+                select.addEventListener('change', function () {
+                    handleSelect(levelIndex, parseInt(this.value));
+                });
+
+                levelDiv.appendChild(label);
+                levelDiv.appendChild(select);
+                levelsContainer.appendChild(levelDiv);
+            }
+
+            function handleSelect(levelIndex, folderId) {
+                selectedPath = selectedPath.slice(0, levelIndex);
+
+                if (!folderId) {
+                    while (levelsContainer.children.length > levelIndex + 1) {
+                        levelsContainer.removeChild(levelsContainer.lastChild);
+                    }
+                    selectedPath = selectedPath.slice(0, levelIndex);
+                    updateFinalState();
+                    return;
+                }
+
+                selectedPath[levelIndex] = folderId;
+
+                while (levelsContainer.children.length > levelIndex + 1) {
+                    levelsContainer.removeChild(levelsContainer.lastChild);
+                }
+
+                var children = allFolders.filter(function (f) {
+                    return f.parentId === folderId;
+                });
+
+                if (children.length > 0) {
+                    createLevel(children, levelIndex + 1);
+                }
+
+                updateFinalState();
+            }
+
+            function updateFinalState() {
+                var validPath = selectedPath.filter(function (id) { return id; });
+
+                if (validPath.length === 0) {
+                    targetFolderId.value = '';
+                    submitBtn.disabled = true;
+                    pathGroup.style.display = 'none';
+                    return;
+                }
+
+                var finalFolderId = validPath[validPath.length - 1];
+                targetFolderId.value = finalFolderId;
+                submitBtn.disabled = false;
+
+                var pathNames = validPath.map(function (id) {
+                    var folder = allFolders.find(function (f) { return f.id === id; });
+                    return folder ? folder.name : '';
+                }).filter(function (n) { return n; });
+
+                pathPreview.innerHTML = '<i class="bi bi-house-door"></i> ' +
+                    pathNames.map(function (n) {
+                        return '<span class="path-item">' + escapeHtml(n) + '</span>';
+                    }).join(' <i class="bi bi-chevron-left"></i> ');
+
+                pathGroup.style.display = 'block';
+            }
+
+            function escapeHtml(text) {
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            init();
+        });
+    </script>
+}

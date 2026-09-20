@@ -1,0 +1,75 @@
+﻿@{
+    ViewData["Title"] = "اشتراک‌گذاری فایل";
+    var file = ViewBag.File as PDFcoDrive.Models.FileItem;
+    var users = ViewBag.Users as List<PDFcoDrive.Models.User> ?? new();
+}
+
+<div class="page-header">
+    <h1>اشتراک‌گذاری فایل</h1>
+    <p>فایل را برای همکار خود بفرست (فایل نزد خودت می‌ماند)</p>
+</div>
+
+<div class="card-modern" style="max-width: 700px;">
+    @if (file != null)
+    {
+        <div class="message-file-card">
+            <div class="message-file-icon">
+                <i class="bi bi-file-earmark-fill"></i>
+            </div>
+            <div class="message-file-info">
+                <h4>@file.DisplayName</h4>
+                <div class="message-file-meta">
+                    <span><i class="bi bi-hdd"></i> @FormatSize(file.SizeBytes)</span>
+                    <span><i class="bi bi-person"></i> @file.UploadedByUserName</span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="alert-modern success" style="background: rgba(0, 212, 255, 0.08); color: #00d4ff; border-color: rgba(0, 212, 255, 0.3);">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>فایل به اشتراک گذاشته می‌شه و نزد خودت هم می‌مونه ✅</span>
+    </div>
+
+    <form asp-action="ShareFile" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="fileId" value="@file?.Id" />
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-person"></i> گیرنده</label>
+            <select name="receiverId" class="form-control-modern" required>
+                <option value="">— انتخاب گیرنده —</option>
+                @foreach (var user in users)
+                {
+                    <option value="@user.Id">@user.FullName (@user.NationalCode)</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-chat-text"></i> پیام (اختیاری)</label>
+            <textarea name="message" class="form-control-modern" rows="3" maxlength="500" placeholder="توضیح کوتاه..."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-modern btn-modern-primary">
+                <i class="bi bi-send-fill"></i> اشتراک‌گذاری
+            </button>
+            <a asp-controller="Home" asp-action="Index" class="btn-modern btn-modern-outline">
+                <i class="bi bi-x-lg"></i> انصراف
+            </a>
+        </div>
+    </form>
+</div>
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

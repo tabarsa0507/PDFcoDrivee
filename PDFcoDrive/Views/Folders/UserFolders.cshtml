@@ -1,0 +1,143 @@
+﻿@model List<PDFcoDrive.Models.FolderWithLevel>
+@{
+    ViewData["Title"] = "پوشه‌های کاربر";
+    var user = ViewBag.SelectedUser as PDFcoDrive.Models.User;
+    int totalFolders = (int)(ViewBag.TotalFolders ?? 0);
+    int totalFiles = (int)(ViewBag.TotalFiles ?? 0);
+    long totalSize = (long)(ViewBag.TotalSize ?? 0L);
+
+    var roleLabel = user?.Role switch
+    {
+        "Admin" => "مدیر سیستم",
+        "Board" => "هیئت مدیره",
+        _ => "کاربر ساده"
+    };
+}
+
+<div class="page-header">
+    <h1>پوشه‌های @user?.FullName</h1>
+    <p>
+        @roleLabel — @user?.NationalCode
+    </p>
+</div>
+
+<div class="page-actions">
+    <a asp-action="Index" class="btn-modern btn-modern-outline">
+        <i class="bi bi-arrow-right"></i>
+        بازگشت به لیست کاربران
+    </a>
+</div>
+
+<!-- آمار کاربر -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card-modern purple">
+            <div class="stat-icon-modern purple"><i class="bi bi-folder-fill"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalFolders</h3>
+                <p>کل پوشه‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card-modern blue">
+            <div class="stat-icon-modern blue"><i class="bi bi-files"></i></div>
+            <div class="stat-info-modern">
+                <h3>@totalFiles</h3>
+                <p>فایل‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card-modern green">
+            <div class="stat-icon-modern green"><i class="bi bi-hdd-fill"></i></div>
+            <div class="stat-info-modern">
+                <h3>@FormatSize(totalSize)</h3>
+                <p>حجم کل</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card-modern">
+        <div class="empty-state-modern">
+            <div class="empty-icon"><i class="bi bi-folder"></i></div>
+            <h4>این کاربر پوشه‌ای نساخته</h4>
+            <p>هیچ پوشه‌ای برای این کاربر وجود نداره</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card-modern">
+        <div class="section-header">
+            <h3><i class="bi bi-diagram-3-fill"></i> ساختار پوشه‌ها</h3>
+        </div>
+
+        <div class="folder-tree">
+            @foreach (var item in Model)
+            {
+                var indentPx = item.Level * 32;
+
+                <a asp-action="Browse" asp-route-id="@item.Folder.Id"
+                   class="folder-tree-item"
+                   style="padding-right: calc(16px + @(indentPx)px);">
+                    @if (item.Level > 0)
+                    {
+                        <i class="bi bi-arrow-return-left tree-arrow"></i>
+                    }
+                    <div class="tree-folder-icon" style="background: @item.Folder.Color;">
+                        <i class="bi @item.Folder.Icon"></i>
+                    </div>
+                    <div class="tree-folder-info">
+                        <strong>@item.Folder.Name</strong>
+                        @if (!string.IsNullOrEmpty(item.Folder.Description))
+                        {
+                            <span>@item.Folder.Description</span>
+                        }
+                    </div>
+                    <div class="tree-folder-meta">
+                        @if (item.ChildCount > 0)
+                        {
+                            <span><i class="bi bi-folder-fill"></i> @item.ChildCount زیرپوشه</span>
+                        }
+                        @if (item.FileCount > 0)
+                        {
+                            <span><i class="bi bi-files"></i> @item.FileCount فایل</span>
+                        }
+                        @switch (item.Folder.Access)
+                        {
+                            case PDFcoDrive.Models.AccessLevel.Public:
+                                <span class="access-badge public"><i class="bi bi-globe"></i> عمومی</span>
+                                break;
+                            case PDFcoDrive.Models.AccessLevel.Private:
+                                <span class="access-badge private"><i class="bi bi-lock"></i> خصوصی</span>
+                                break;
+                            case PDFcoDrive.Models.AccessLevel.Team:
+                                <span class="access-badge team"><i class="bi bi-people"></i> تیمی</span>
+                                break;
+                            case PDFcoDrive.Models.AccessLevel.Board:
+                                <span class="access-badge board"><i class="bi bi-shield-fill"></i> هیئت</span>
+                                break;
+                        }
+                    </div>
+                    <i class="bi bi-chevron-left tree-arrow-end"></i>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+@functions {
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1) { order++; len = len / 1024; }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

@@ -1,0 +1,161 @@
+﻿@{
+    ViewData["Title"] = "پوشه جدید";
+    int? parentId = ViewBag.ParentId as int?;
+    string? parentName = ViewBag.ParentName as string;
+    string? returnUrl = ViewBag.ReturnUrl as string;
+    var users = ViewBag.Users as List<PDFcoDrive.Models.User> ?? new();
+}
+
+<div class="page-header">
+    <h1>پوشه جدید</h1>
+    <p>@(string.IsNullOrEmpty(parentName) ? "ساخت پوشه در ریشه" : $"داخل پوشه: {parentName}")</p>
+</div>
+
+<div class="form-card">
+    <form asp-action="Create" method="post" id="folderForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="parentId" value="@parentId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert-modern error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>@ViewBag.Error</span>
+            </div>
+        }
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-folder"></i> نام پوشه</label>
+            <input type="text" name="name" class="form-control-modern" required maxlength="200" />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-text-paragraph"></i> توضیحات</label>
+            <textarea name="description" class="form-control-modern" rows="2" maxlength="500"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label-modern"><i class="bi bi-shield-fill"></i> سطح دسترسی</label>
+            <div class="access-options">
+                <label class="access-option">
+                    <input type="radio" name="access" value="0" checked />
+                    <div class="access-card">
+                        <i class="bi bi-lock-fill"></i>
+                        <strong>خصوصی</strong>
+                        <span>فقط خودت</span>
+                    </div>
+                </label>
+                <label class="access-option">
+                    <input type="radio" name="access" value="1" />
+                    <div class="access-card">
+                        <i class="bi bi-globe"></i>
+                        <strong>عمومی</strong>
+                        <span>همه می‌بینن و آپلود می‌کنن</span>
+                    </div>
+                </label>
+                <label class="access-option">
+                    <input type="radio" name="access" value="2" />
+                    <div class="access-card">
+                        <i class="bi bi-people-fill"></i>
+                        <strong>کاربران خاص</strong>
+                        <span>فقط انتخاب‌شده‌ها</span>
+                    </div>
+                </label>
+                <label class="access-option">
+                    <input type="radio" name="access" value="3" />
+                    <div class="access-card">
+                        <i class="bi bi-shield-fill"></i>
+                        <strong>هیئت مدیره</strong>
+                        <span>فقط اعضای Board</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group" id="usersSelectGroup" style="display: none;">
+            <label class="form-label-modern"><i class="bi bi-people"></i> کاربران مجاز</label>
+            <div class="users-checkbox-list">
+                @foreach (var u in users)
+                {
+                    <label class="user-checkbox-item">
+                        <input type="checkbox" name="allowedUserIds" value="@u.Id" />
+                        <div class="user-checkbox-avatar">@(u.FullName.Substring(0, 1).ToUpper())</div>
+                        <div class="user-checkbox-info">
+                            <strong>@u.FullName</strong>
+                            <span>@u.NationalCode</span>
+                        </div>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label-modern"><i class="bi bi-emoji-smile"></i> آیکون</label>
+                    <select name="icon" class="form-control-modern">
+                        <option value="bi-folder-fill">📁 پوشه</option>
+                        <option value="bi-briefcase-fill">💼 کار</option>
+                        <option value="bi-people-fill">👥 تیم</option>
+                        <option value="bi-star-fill">⭐ مهم</option>
+                        <option value="bi-bookmark-fill">🔖 نشان‌شده</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label-modern"><i class="bi bi-palette"></i> رنگ</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" name="color" value="#00d4ff" class="form-control-modern color-input" id="colorInput" />
+                        <div class="color-presets">
+                            <button type="button" class="color-preset" data-color="#00d4ff" style="background:#00d4ff;"></button>
+                            <button type="button" class="color-preset" data-color="#7c3aed" style="background:#7c3aed;"></button>
+                            <button type="button" class="color-preset" data-color="#ec4899" style="background:#ec4899;"></button>
+                            <button type="button" class="color-preset" data-color="#10b981" style="background:#10b981;"></button>
+                            <button type="button" class="color-preset" data-color="#f59e0b" style="background:#f59e0b;"></button>
+                            <button type="button" class="color-preset" data-color="#ef4444" style="background:#ef4444;"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-modern btn-modern-primary">
+                <i class="bi bi-check-lg"></i> ساخت پوشه
+            </button>
+            @if (!string.IsNullOrEmpty(returnUrl))
+            {
+                <a href="@returnUrl" class="btn-modern btn-modern-outline">
+                    <i class="bi bi-x-lg"></i> انصراف
+                </a>
+            }
+            else
+            {
+                <a asp-action="Index" class="btn-modern btn-modern-outline">
+                    <i class="bi bi-x-lg"></i> انصراف
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.color-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('colorInput').value = btn.dataset.color;
+            });
+        });
+
+        const accessRadios = document.querySelectorAll('input[name="access"]');
+        const usersGroup = document.getElementById('usersSelectGroup');
+
+        accessRadios.forEach(r => {
+            r.addEventListener('change', function () {
+                usersGroup.style.display = this.value === '2' ? 'block' : 'none';
+            });
+        });
+    </script>
+}

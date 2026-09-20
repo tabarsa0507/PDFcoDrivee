@@ -1,0 +1,119 @@
+﻿@{
+    ViewData["Title"] = "پوشه‌ها";
+    var myFolders = ViewBag.MyFolders as List<PDFcoDrive.Models.Folder> ?? new();
+    var publicFolders = ViewBag.PublicFolders as List<PDFcoDrive.Models.Folder> ?? new();
+}
+
+<div class="page-header">
+    <h1>پوشه‌ها</h1>
+    <p>پوشه‌های شما و پوشه‌های عمومی همکاران</p>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-modern success">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-modern error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<div class="page-actions">
+    <a asp-action="Create" class="btn-modern btn-modern-primary">
+        <i class="bi bi-folder-plus"></i>
+        پوشه جدید
+    </a>
+</div>
+
+<h3 class="section-title">
+    <i class="bi bi-folder-fill"></i>
+    پوشه‌های من (@myFolders.Count)
+</h3>
+
+@if (!myFolders.Any())
+{
+    <div class="card-modern mb-4">
+        <div class="empty-state-modern" style="padding: 30px 20px;">
+            <div class="empty-icon" style="width: 60px; height: 60px; font-size: 26px;">
+                <i class="bi bi-folder"></i>
+            </div>
+            <h4 style="font-size: 14px;">هنوز پوشه‌ای نساختی</h4>
+            <p style="font-size: 12px;">اولین پوشه خود را بساز</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="folders-grid mb-4">
+        @foreach (var folder in myFolders)
+        {
+            <a asp-action="Browse" asp-route-id="@folder.Id" class="folder-card" style="text-decoration: none; color: inherit;">
+                <div class="folder-card-icon" style="background: @folder.Color;">
+                    <i class="bi @folder.Icon"></i>
+                </div>
+                <div class="folder-card-body">
+                    <h4>@folder.Name</h4>
+                    @if (!string.IsNullOrEmpty(folder.Description))
+                    {
+                        <p>@folder.Description</p>
+                    }
+                    <div class="folder-card-meta">
+                        @switch (folder.Access)
+                        {
+                            case PDFcoDrive.Models.AccessLevel.Public:
+                                <span><i class="bi bi-globe"></i> عمومی</span>
+                                break;
+                            case PDFcoDrive.Models.AccessLevel.Private:
+                                <span><i class="bi bi-lock"></i> خصوصی</span>
+                                break;
+                            case PDFcoDrive.Models.AccessLevel.Team:
+                                <span><i class="bi bi-people"></i> تیمی</span>
+                                break;
+                            case PDFcoDrive.Models.AccessLevel.Board:
+                                <span><i class="bi bi-shield-fill"></i> هیئت</span>
+                                break;
+                        }
+                    </div>
+                </div>
+                <i class="bi bi-chevron-left folder-card-arrow"></i>
+            </a>
+        }
+    </div>
+}
+
+@if (publicFolders.Any())
+{
+    <h3 class="section-title">
+        <i class="bi bi-globe"></i>
+        پوشه‌های عمومی همکاران (@publicFolders.Count)
+    </h3>
+
+    <div class="folders-grid">
+        @foreach (var folder in publicFolders)
+        {
+            <a asp-action="Browse" asp-route-id="@folder.Id" class="folder-card" style="text-decoration: none; color: inherit;">
+                <div class="folder-card-icon" style="background: @folder.Color;">
+                    <i class="bi @folder.Icon"></i>
+                </div>
+                <div class="folder-card-body">
+                    <h4>@folder.Name</h4>
+                    @if (!string.IsNullOrEmpty(folder.Description))
+                    {
+                        <p>@folder.Description</p>
+                    }
+                    <div class="folder-card-meta">
+                        <span><i class="bi bi-globe"></i> عمومی</span>
+                        <span><i class="bi bi-person"></i> @folder.OwnerName</span>
+                    </div>
+                </div>
+                <i class="bi bi-chevron-left folder-card-arrow"></i>
+            </a>
+        }
+    </div>
+}
