@@ -7,7 +7,8 @@ namespace PDFcoDrive.Models
         Private = 0,
         Public = 1,
         Team = 2,
-        Board = 3
+        Board = 3,
+        Group = 4
     }
 
     public class Folder
@@ -29,12 +30,14 @@ namespace PDFcoDrive.Models
 
         public List<string> AllowedUserIds { get; set; } = new();
 
+        public List<int> AllowedGroupIds { get; set; } = new();
+
         [StringLength(500)]
         public string? Description { get; set; }
 
         public string Icon { get; set; } = "bi-folder-fill";
 
-        public string Color { get; set; } = "#0ea5e9";
+        public string Color { get; set; } = "#00d4ff";
 
         public bool IsSystem { get; set; } = false;
 

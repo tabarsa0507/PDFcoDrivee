@@ -26,9 +26,12 @@ namespace PDFcoDrive.Services
         Task AppendViewLogAsync(ViewLog log);
         Task<List<ViewLog>> GetViewLogsAsync();
 
-        // Shared Files
         Task<List<SharedFile>> GetSharedFilesAsync();
         Task SaveSharedFilesAsync(List<SharedFile> sharedFiles);
+
+        // ⬇️ جدید
+        Task<List<Group>> GetGroupsAsync();
+        Task SaveGroupsAsync(List<Group> groups);
     }
 
     public class JsonStorageService : IJsonStorageService
@@ -44,6 +47,7 @@ namespace PDFcoDrive.Services
         private const string DownloadLogsFile = "downloadlogs.json";
         private const string ViewLogsFile = "viewlogs.json";
         private const string SharedFilesFile = "sharedfiles.json";
+        private const string GroupsFile = "groups.json";
 
         private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -143,5 +147,8 @@ namespace PDFcoDrive.Services
 
         public Task<List<SharedFile>> GetSharedFilesAsync() => ReadAsync<SharedFile>(SharedFilesFile);
         public Task SaveSharedFilesAsync(List<SharedFile> sharedFiles) => WriteAsync(SharedFilesFile, sharedFiles);
+
+        public Task<List<Group>> GetGroupsAsync() => ReadAsync<Group>(GroupsFile);
+        public Task SaveGroupsAsync(List<Group> groups) => WriteAsync(GroupsFile, groups);
     }
 }

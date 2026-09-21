@@ -12,7 +12,7 @@ namespace PDFcoDrive.Services
         Task<(bool success, string message, int? id)> CreateAsync(Folder folder);
         Task<(bool success, string message)> UpdateAsync(Folder folder);
         Task<(bool success, string message)> DeleteAsync(int id, string userId, string role);
-        bool CanAccess(Folder folder, string userId, string role);
+        Task<bool> CanAccessAsync(Folder folder, string userId, string role);
         bool CanUploadToFolder(Folder folder, string userId, string role);
         bool CanManageFolder(Folder folder, string userId, string role);
         Task<List<Folder>> GetBreadcrumbAsync(int folderId);
@@ -21,10 +21,12 @@ namespace PDFcoDrive.Services
     public class FolderService : IFolderService
     {
         private readonly IJsonStorageService _storage;
+        private readonly IGroupService _groups;
 
-        public FolderService(IJsonStorageService storage)
+        public FolderService(IJsonStorageService storage, IGroupService groups)
         {
             _storage = storage;
+            _groups = groups;
         }
 
         public async Task<List<Folder>> GetAllAsync() => await _storage.GetFoldersAsync();
@@ -50,21 +52,59 @@ namespace PDFcoDrive.Services
         public async Task<List<Folder>> GetAccessibleAsync(string userId, string role)
         {
             var folders = await _storage.GetFoldersAsync();
-            return folders.Where(f => CanAccess(f, userId, role)).OrderBy(f => f.Name).ToList();
+            var result = new List<Folder>();
+
+            foreach (var folder in folders)
+            {
+                if (await CanAccessAsync(folder, userId, role))
+                    result.Add(folder);
+            }
+
+            return result.OrderBy(f => f.Name).ToList();
         }
 
         // ============================================
-        // دسترسی به پوشه
-        // Admin و Board → همه پوشه‌ها
+        // قوانین دسترسی
+        // Admin: همه چیز
+        // Board: همه چیز بجز پوشه Private عضو Board دیگه
+        // User: پوشه خودش + عمومی + گروه‌ها
         // ============================================
-        public bool CanAccess(Folder folder, string userId, string role)
+        public async Task<bool> CanAccessAsync(Folder folder, string userId, string role)
         {
-            // Admin و Board همه چیز رو می‌بینن
-            if (role == "Admin") return true;
             // مالک خودش
             if (folder.OwnerUserId == userId) return true;
-            // پوشه‌های سیستمی
+
+            // Admin → همه چیز
+            if (role == "Admin") return true;
+
+            // دریافت نقش مالک
+            var users = await _storage.GetUsersAsync();
+            var owner = users.FirstOrDefault(u => u.Id == folder.OwnerUserId);
+            var ownerRole = owner?.Role ?? "User";
+
+            // Board → همه چیز بجز پوشه Private عضو دیگه‌ای Board
+            if (role == "Board")
+            {
+                if (ownerRole == "Board" && folder.Access == AccessLevel.Private)
+                    return false;
+
+                // پوشه Private کاربر عادی رو هم نمی‌بینه (فقط Admin)
+                if (ownerRole == "User" && folder.Access == AccessLevel.Private)
+                    return false;
+
+                return true;
+            }
+
+            // کاربر عادی
             if (folder.SystemType == "Shared") return true;
+
+            // گروه
+            if (folder.Access == AccessLevel.Group)
+            {
+                var userGroups = await _groups.GetByUserAsync(userId);
+                var userGroupIds = userGroups.Select(g => g.Id).ToList();
+                return folder.AllowedGroupIds.Any(gid => userGroupIds.Contains(gid));
+            }
 
             return folder.Access switch
             {
@@ -77,15 +117,20 @@ namespace PDFcoDrive.Services
         }
 
         // ============================================
-        // اجازه آپلود در پوشه
-        // Admin و Board → همه جا
+        // اجازه آپلود
         // ============================================
         public bool CanUploadToFolder(Folder folder, string userId, string role)
         {
-            // Admin و Board همه جا می‌تونن آپلود کنن
+            // مالک
+            if (folder.OwnerUserId == userId) return true;
+
+            // Admin همه جا
             if (role == "Admin") return true;
 
-            if (folder.OwnerUserId == userId) return true;
+            // Board همه جا بجز پوشه Private
+            if (role == "Board" && folder.Access != AccessLevel.Private) return true;
+
+            // کاربر عادی
             if (folder.Access == AccessLevel.Public) return true;
             if (folder.SystemType == "Shared") return true;
             if (folder.Access == AccessLevel.Team && folder.AllowedUserIds.Contains(userId)) return true;
@@ -94,14 +139,15 @@ namespace PDFcoDrive.Services
         }
 
         // ============================================
-        // اجازه مدیریت پوشه
+        // مدیریت پوشه
         // ============================================
         public bool CanManageFolder(Folder folder, string userId, string role)
         {
-            // Admin و Board همه پوشه‌ها رو مدیریت می‌کنن
+            if (folder.OwnerUserId == userId) return true;
             if (role == "Admin") return true;
+            if (role == "Board" && folder.Access != AccessLevel.Private) return true;
 
-            return folder.OwnerUserId == userId;
+            return false;
         }
 
         public async Task<(bool success, string message, int? id)> CreateAsync(Folder folder)
@@ -114,7 +160,7 @@ namespace PDFcoDrive.Services
             if (folders.Any(f => f.ParentId == folder.ParentId &&
                                   f.Name == folder.Name &&
                                   f.OwnerUserId == folder.OwnerUserId))
-                return (false, "پوشه‌ای با این نام در این مسیر وجود دارد", null);
+                return (false, "پوشه‌ای با این نام وجود دارد", null);
 
             folder.Id = folders.Count > 0 ? folders.Max(f => f.Id) + 1 : 1;
             folder.CreatedAt = DateTime.Now;
@@ -136,6 +182,7 @@ namespace PDFcoDrive.Services
             existing.Color = folder.Color;
             existing.Access = folder.Access;
             existing.AllowedUserIds = folder.AllowedUserIds;
+            existing.AllowedGroupIds = folder.AllowedGroupIds;
 
             await _storage.SaveFoldersAsync(folders);
             return (true, "پوشه ویرایش شد");
@@ -148,8 +195,7 @@ namespace PDFcoDrive.Services
             if (folder == null) return (false, "پوشه یافت نشد");
             if (folder.IsSystem) return (false, "پوشه سیستمی قابل حذف نیست");
 
-            // Admin و Board می‌تونن حذف کنن
-            if (folder.OwnerUserId != userId && role != "Admin" && role != "Board")
+            if (folder.OwnerUserId != userId && role != "Admin")
                 return (false, "اجازه حذف ندارید");
 
             if (folders.Any(f => f.ParentId == id))

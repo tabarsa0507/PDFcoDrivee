@@ -49,6 +49,7 @@ builder.Services.AddScoped<IFolderService, FolderService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<ITrashService, TrashService>();
 builder.Services.AddScoped<ISharedFileService, SharedFileService>();
+builder.Services.AddScoped<IGroupService, GroupService>();
 
 // ============================================
 // Build

@@ -1,7 +1,7 @@
 ﻿@{
     ViewData["Title"] = "آپلود فایل";
     var categories = ViewBag.Categories as List<PDFcoDrive.Models.Category> ?? new();
-    var usersJson = ViewBag.UsersJson as string ?? "[]";
+    string usersJson = ViewBag.UsersJson as string ?? "[]";
     int? selectedFolderId = ViewBag.SelectedFolderId as int?;
 }
 
@@ -12,9 +12,6 @@
 
 <div id="alertBox"></div>
 
-<!-- ============================================
-     Upload Zone
-     ============================================ -->
 <div class="card-modern mb-4">
     <div class="upload-zone" id="uploadZone">
         <div class="upload-icon-main">
@@ -22,7 +19,7 @@
         </div>
         <div class="upload-zone-text">
             <h4>فایل‌ها را اینجا بکشید و رها کنید</h4>
-            <p>یا برای انتخاب کلیک کنید — حداکثر حجم هر فایل 100MB</p>
+            <p>یا برای انتخاب کلیک کنید — حداکثر حجم 100MB</p>
         </div>
         <button type="button" class="upload-browse-btn" id="browseBtn">
             <i class="bi bi-folder2-open"></i>
@@ -34,16 +31,12 @@
     <div class="selected-files" id="selectedFiles"></div>
 </div>
 
-<!-- ============================================
-     اطلاعات فایل
-     ============================================ -->
 <div class="card-modern">
     <div class="section-header">
         <h3><i class="bi bi-info-circle-fill"></i> اطلاعات فایل</h3>
     </div>
 
     <div class="row g-3">
-        <!-- کاربر مقصد -->
         <div class="col-lg-3 col-md-6">
             <label class="form-label-modern">
                 <i class="bi bi-person"></i> کاربر مقصد
@@ -54,7 +47,6 @@
             <small class="field-hint">فایل برای کی ذخیره بشه؟</small>
         </div>
 
-        <!-- پوشه -->
         <div class="col-lg-3 col-md-6">
             <label class="form-label-modern">
                 <i class="bi bi-folder"></i> پوشه
@@ -65,7 +57,6 @@
             <small class="field-hint" id="folderHint">ابتدا کاربر رو انتخاب کن</small>
         </div>
 
-        <!-- دسته‌بندی -->
         <div class="col-lg-3 col-md-6">
             <label class="form-label-modern">
                 <i class="bi bi-tags"></i> دسته‌بندی
@@ -80,7 +71,6 @@
             <small class="field-hint">اختیاری</small>
         </div>
 
-        <!-- توضیحات -->
         <div class="col-lg-3 col-md-6">
             <label class="form-label-modern">
                 <i class="bi bi-text-paragraph"></i> توضیحات
@@ -105,32 +95,30 @@
 
 @section Scripts {
     <script>
-        // ============================================
-        // داده‌های کاربران (از سرور)
-        // ============================================
-        const usersData = @Html.Raw(usersJson);
-
         (function () {
-            const uploadZone = document.getElementById('uploadZone');
-            const fileInput = document.getElementById('fileInput');
-            const selectedFiles = document.getElementById('selectedFiles');
-            const submitBtn = document.getElementById('submitBtn');
-            const browseBtn = document.getElementById('browseBtn');
-            const alertBox = document.getElementById('alertBox');
-            const userSelect = document.getElementById('userSelect');
-            const folderSelect = document.getElementById('folderId');
-            const folderHint = document.getElementById('folderHint');
+            var usersData = @Html.Raw(usersJson);
 
-            let allFiles = [];
+            var uploadZone = document.getElementById('uploadZone');
+            var fileInput = document.getElementById('fileInput');
+            var selectedFiles = document.getElementById('selectedFiles');
+            var submitBtn = document.getElementById('submitBtn');
+            var browseBtn = document.getElementById('browseBtn');
+            var alertBox = document.getElementById('alertBox');
+            var userSelect = document.getElementById('userSelect');
+            var folderSelect = document.getElementById('folderId');
+            var folderHint = document.getElementById('folderHint');
+
+            var allFiles = [];
 
             // ============================================
-            // پر کردن Dropdown کاربران
+            // پر کردن کاربران
             // ============================================
-            usersData.forEach(u => {
-                const opt = document.createElement('option');
+            for (var i = 0; i < usersData.length; i++) {
+                var u = usersData[i];
+                var opt = document.createElement('option');
                 opt.value = u.userId;
 
-                let label = u.userName;
+                var label = u.userName;
                 if (u.isMe) {
                     label = '👤 ' + u.userName + ' (خودم)';
                 } else if (u.userRole === 'Admin') {
@@ -143,13 +131,13 @@
 
                 opt.textContent = label;
                 userSelect.appendChild(opt);
-            });
+            }
 
             // ============================================
-            // انتخاب کاربر → نمایش پوشه‌ها
+            // تغییر کاربر → پوشه‌ها
             // ============================================
             userSelect.addEventListener('change', function () {
-                const userId = this.value;
+                var userId = this.value;
                 folderSelect.innerHTML = '<option value="">— ریشه (بدون پوشه) —</option>';
 
                 if (!userId) {
@@ -158,13 +146,15 @@
                     return;
                 }
 
-                const user = usersData.find(u => u.userId === userId);
-                if (!user) {
-                    folderSelect.disabled = true;
-                    return;
+                var user = null;
+                for (var j = 0; j < usersData.length; j++) {
+                    if (usersData[j].userId === userId) {
+                        user = usersData[j];
+                        break;
+                    }
                 }
 
-                if (!user.folders || user.folders.length === 0) {
+                if (!user || !user.folders || user.folders.length === 0) {
                     folderSelect.disabled = false;
                     folderHint.textContent = 'این کاربر پوشه قابل دسترس نداره';
                     return;
@@ -172,18 +162,19 @@
 
                 folderHint.textContent = user.folders.length + ' پوشه قابل دسترس';
 
-                user.folders.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f.id;
+                for (var k = 0; k < user.folders.length; k++) {
+                    var f = user.folders[k];
+                    var opt2 = document.createElement('option');
+                    opt2.value = f.id;
 
-                    let prefix = '';
+                    var prefix = '';
                     if (f.level && f.level > 0) {
                         prefix = '└─'.repeat(f.level) + ' ';
                     }
 
-                    opt.textContent = prefix + f.path + ' (' + f.accessName + ')';
-                    folderSelect.appendChild(opt);
-                });
+                    opt2.textContent = prefix + f.path + ' (' + f.accessName + ')';
+                    folderSelect.appendChild(opt2);
+                }
 
                 folderSelect.disabled = false;
             });
@@ -191,40 +182,50 @@
             // ============================================
             // Drag & Drop
             // ============================================
-            ['dragenter', 'dragover'].forEach(evt => {
-                uploadZone.addEventListener(evt, (e) => {
-                    e.preventDefault(); e.stopPropagation();
+            ['dragenter', 'dragover'].forEach(function (evt) {
+                uploadZone.addEventListener(evt, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     uploadZone.classList.add('dragover');
                 });
             });
 
-            ['dragleave', 'drop'].forEach(evt => {
-                uploadZone.addEventListener(evt, (e) => {
-                    e.preventDefault(); e.stopPropagation();
+            ['dragleave', 'drop'].forEach(function (evt) {
+                uploadZone.addEventListener(evt, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     uploadZone.classList.remove('dragover');
                 });
             });
 
-            uploadZone.addEventListener('drop', (e) => addFiles(Array.from(e.dataTransfer.files)));
+            uploadZone.addEventListener('drop', function (e) {
+                addFiles(Array.from(e.dataTransfer.files));
+            });
 
-            uploadZone.addEventListener('click', (e) => {
+            uploadZone.addEventListener('click', function (e) {
                 if (e.target.tagName !== 'BUTTON') fileInput.click();
             });
 
-            browseBtn.addEventListener('click', (e) => {
+            browseBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 fileInput.click();
             });
 
-            fileInput.addEventListener('change', (e) => {
+            fileInput.addEventListener('change', function (e) {
                 addFiles(Array.from(e.target.files));
                 fileInput.value = '';
             });
 
             function addFiles(newFiles) {
-                newFiles.forEach(f => {
-                    if (!allFiles.some(x => x.name === f.name && x.size === f.size))
-                        allFiles.push(f);
+                newFiles.forEach(function (f) {
+                    var exists = false;
+                    for (var x = 0; x < allFiles.length; x++) {
+                        if (allFiles[x].name === f.name && allFiles[x].size === f.size) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) allFiles.push(f);
                 });
                 renderFiles();
             }
@@ -236,24 +237,23 @@
                     return;
                 }
 
-                allFiles.forEach((file, index) => {
-                    const item = document.createElement('div');
+                allFiles.forEach(function (file, index) {
+                    var item = document.createElement('div');
                     item.className = 'selected-file-item';
-                    item.innerHTML = `
-                        <div class="file-icon"><i class="bi ${getFileIcon(file.name)}"></i></div>
-                        <div class="file-info">
-                            <div class="file-name">${escapeHtml(file.name)}</div>
-                            <div class="file-size">${formatSize(file.size)}</div>
-                        </div>
-                        <button type="button" class="file-remove" data-index="${index}">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    `;
+                    item.innerHTML =
+                        '<div class="file-icon"><i class="bi ' + getFileIcon(file.name) + '"></i></div>' +
+                        '<div class="file-info">' +
+                            '<div class="file-name">' + escapeHtml(file.name) + '</div>' +
+                            '<div class="file-size">' + formatSize(file.size) + '</div>' +
+                        '</div>' +
+                        '<button type="button" class="file-remove" data-index="' + index + '">' +
+                            '<i class="bi bi-x-lg"></i>' +
+                        '</button>';
                     selectedFiles.appendChild(item);
                 });
 
-                selectedFiles.querySelectorAll('.file-remove').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
+                selectedFiles.querySelectorAll('.file-remove').forEach(function (btn) {
+                    btn.addEventListener('click', function (e) {
                         e.stopPropagation();
                         allFiles.splice(parseInt(btn.dataset.index), 1);
                         renderFiles();
@@ -264,7 +264,7 @@
             }
 
             // ============================================
-            // Submit (fetch)
+            // Submit
             // ============================================
             submitBtn.addEventListener('click', async function () {
                 if (allFiles.length === 0) {
@@ -272,32 +272,32 @@
                     return;
                 }
 
-                const categoryId = document.getElementById('categoryId').value;
-                const folderId = folderSelect.value;
-                const description = document.getElementById('description').value;
+                var categoryId = document.getElementById('categoryId').value;
+                var folderId = folderSelect.value;
+                var description = document.getElementById('description').value;
 
-                const formData = new FormData();
+                var formData = new FormData();
                 if (categoryId) formData.append('categoryId', categoryId);
                 if (folderId) formData.append('folderId', folderId);
                 if (description) formData.append('description', description);
 
-                allFiles.forEach(f => formData.append('files', f, f.name));
+                allFiles.forEach(function (f) { formData.append('files', f, f.name); });
 
-                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-                if (token) formData.append('__RequestVerificationToken', token);
+                var token = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (token) formData.append('__RequestVerificationToken', token.value);
 
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> در حال آپلود...';
 
                 try {
-                    const response = await fetch('/Files/Upload', {
+                    var response = await fetch('/Files/Upload', {
                         method: 'POST',
                         body: formData
                     });
 
                     if (response.ok || response.redirected) {
                         showAlert('فایل‌ها با موفقیت آپلود شدند!', 'success');
-                        setTimeout(() => {
+                        setTimeout(function () {
                             if (folderId) {
                                 window.location.href = '/Folders/Browse/' + folderId;
                             } else {
@@ -316,18 +316,15 @@
                 }
             });
 
-            // ============================================
-            // Helper Functions
-            // ============================================
             function showAlert(message, type) {
-                const cls = type === 'error' ? 'error' : 'success';
-                const icon = type === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
-                alertBox.innerHTML = `<div class="alert-modern ${cls}"><i class="bi ${icon}"></i><span>${message}</span></div>`;
+                var cls = type === 'error' ? 'error' : 'success';
+                var icon = type === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
+                alertBox.innerHTML = '<div class="alert-modern ' + cls + '"><i class="bi ' + icon + '"></i><span>' + message + '</span></div>';
             }
 
             function getFileIcon(filename) {
-                const ext = filename.split('.').pop().toLowerCase();
-                const icons = {
+                var ext = filename.split('.').pop().toLowerCase();
+                var icons = {
                     pdf: 'bi-file-pdf', doc: 'bi-file-word', docx: 'bi-file-word',
                     xls: 'bi-file-excel', xlsx: 'bi-file-excel',
                     zip: 'bi-file-zip', rar: 'bi-file-zip',
@@ -339,14 +336,14 @@
 
             function formatSize(bytes) {
                 if (bytes === 0) return '0 B';
-                const k = 1024;
-                const sizes = ['B', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                var k = 1024;
+                var sizes = ['B', 'KB', 'MB', 'GB'];
+                var i = Math.floor(Math.log(bytes) / Math.log(k));
                 return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
             }
 
             function escapeHtml(text) {
-                const div = document.createElement('div');
+                var div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
             }
